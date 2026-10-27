@@ -554,11 +554,7 @@ pub(crate) fn erase_trash() -> Result<(), String> {
 struct TrashRecords(HashMap<PathBuf, PathBuf>);
 
 fn records_file() -> PathBuf {
-    // (With the settings, when they're kept elsewhere for testing.)
-    if let Some(dir) = std::env::var_os("NEW_FINDER_SETTINGS") {
-        return PathBuf::from(dir).join("trash.json");
-    }
-    home().join("Library/Application Support/NewFinder/trash.json")
+    crate::settings::data_dir().join("trash.json")
 }
 
 fn trash_records() -> HashMap<PathBuf, PathBuf> {

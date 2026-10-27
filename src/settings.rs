@@ -1,7 +1,7 @@
 //! What's remembered between launches: Settings (as Finder's), each
 //! folder's view, the sidebar's favorites, the toolbar, the list's columns,
 //! the window's frame, recent servers and folders. Kept as JSON in
-//! `~/Library/Application Support/NewFinder/settings.json`.
+//! `~/Library/Application Support/F2/settings.json`.
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -552,19 +552,48 @@ impl Settings {
     }
 }
 
-/// Where Finder2 keeps what it remembers (settings, the Trash's records,
-/// what you open).
+/// Where F2 keeps what it remembers (settings, the Trash's records,
+/// what you open): `~/Library/Application Support/F2`.
 pub fn data_dir() -> PathBuf {
-    file().parent().map(Path::to_path_buf).unwrap_or_default()
+    static DIR: std::sync::OnceLock<PathBuf> = std::sync::OnceLock::new();
+    DIR.get_or_init(|| {
+        // (NEW_FINDER_SETTINGS: a folder to keep them in instead, for testing.)
+        if let Some(dir) = std::env::var_os("NEW_FINDER_SETTINGS") {
+            return PathBuf::from(dir);
+        }
+        let home = std::env::var_os("HOME").map_or_else(|| PathBuf::from("/"), PathBuf::from);
+        moved_in(&home.join("Library/Application Support"))
+    })
+    .clone()
 }
 
 fn file() -> PathBuf {
-    // (NEW_FINDER_SETTINGS: a folder to keep them in instead, for testing.)
-    if let Some(dir) = std::env::var_os("NEW_FINDER_SETTINGS") {
-        return PathBuf::from(dir).join("settings.json");
+    data_dir().join("settings.json")
+}
+
+/// F2's folder in `support`: "F2". F2 0.2.0 and earlier kept theirs in
+/// "NewFinder" (its first name): moved the first time, with the paths
+/// kept of what's in it (a program extension allowed, a folder opened)
+/// following it. If it can't be moved, it's used where it is.
+fn moved_in(support: &Path) -> PathBuf {
+    let (old, new) = (support.join("NewFinder"), support.join("F2"));
+    if new.exists() || !old.is_dir() {
+        return new;
     }
-    let home = std::env::var_os("HOME").map_or_else(|| PathBuf::from("/"), PathBuf::from);
-    home.join("Library/Application Support/NewFinder/settings.json")
+    if let Err(e) = std::fs::rename(&old, &new) {
+        eprintln!("settings: couldn't move {} to {}: {e}", old.display(), new.display());
+        return old;
+    }
+    let (from, to) = (format!("{}/", old.display()), format!("{}/", new.display()));
+    for name in ["settings.json", "frecency", "quick-open-recent.json"] {
+        let path = new.join(name);
+        if let Ok(text) = std::fs::read_to_string(&path)
+            && text.contains(&from)
+        {
+            let _ = std::fs::write(&path, text.replace(&from, &to));
+        }
+    }
+    new
 }
 
 impl Settings {
@@ -633,6 +662,32 @@ impl Settings {
 #[cfg(test)]
 mod tests {
     use super::Settings;
+
+    #[test]
+    fn old_folder_moved_once() {
+        let support = std::env::temp_dir().join(format!("f2-moved-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&support);
+        let (old, new) = (support.join("NewFinder"), support.join("F2"));
+        std::fs::create_dir_all(old.join("Extensions/railway")).unwrap();
+        let kept = format!(r#"{{"allowed_extension_programs":{{"f2.github":"{}/Extensions/github"}}}}"#, old.display());
+        std::fs::write(old.join("settings.json"), &kept).unwrap();
+        std::fs::write(old.join("frecency"), format!("1.000\t1\t{}/Extensions/railway\n2.000\t1\t/Users/me/Downloads\n", old.display())).unwrap();
+
+        assert_eq!(super::moved_in(&support), new);
+        assert!(!old.exists() && new.join("Extensions/railway").is_dir());
+        let settings = std::fs::read_to_string(new.join("settings.json")).unwrap();
+        assert_eq!(settings, kept.replace("/NewFinder/", "/F2/"));
+        let frecency = std::fs::read_to_string(new.join("frecency")).unwrap();
+        assert!(frecency.contains(&format!("{}/Extensions/railway", new.display())) && frecency.contains("/Users/me/Downloads"));
+
+        // An old one made again (by an older F2) is left alone: F2's is used.
+        std::fs::create_dir_all(&old).unwrap();
+        assert_eq!(super::moved_in(&support), new);
+        assert!(old.exists());
+        // And with neither, F2's is the one to make.
+        std::fs::remove_dir_all(&support).unwrap();
+        assert_eq!(super::moved_in(&support), new);
+    }
 
     #[test]
     fn up_put_in_once() {

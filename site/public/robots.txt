@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://getf2.com/sitemap.xml

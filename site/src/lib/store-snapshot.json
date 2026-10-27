@@ -1,0 +1,461 @@
+[
+ {
+  "id": "f2.can-i-use",
+  "version": "1.0.0",
+  "name": "Can I Use",
+  "description": "Which browsers support a web feature, since which version, from caniuse.com's own data.",
+  "author": "f2",
+  "network": [
+   "raw.githubusercontent.com"
+  ],
+  "commands": [
+   {
+    "title": "Can I Use",
+    "keyword": "caniuse"
+   }
+  ],
+  "preferences": []
+ },
+ {
+  "id": "f2.cloudflare",
+  "version": "1.0.0",
+  "name": "Cloudflare",
+  "description": "Your Workers and Pages, and their deployments, with an API token of yours.",
+  "author": "f2",
+  "network": [
+   "api.cloudflare.com"
+  ],
+  "commands": [
+   {
+    "title": "Workers & Pages",
+    "keyword": "cf"
+   }
+  ],
+  "preferences": [
+   {
+    "title": "API Token",
+    "type": "password",
+    "required": true
+   },
+   {
+    "title": "Show Pages projects",
+    "type": "checkbox",
+    "required": false
+   }
+  ]
+ },
+ {
+  "id": "f2.crates",
+  "version": "1.0.0",
+  "name": "crates.io",
+  "description": "Search Rust's crates on crates.io: what each is, how much it's used, where its code and docs are.",
+  "author": "f2",
+  "network": [
+   "crates.io",
+   "api.deps.dev"
+  ],
+  "commands": [
+   {
+    "title": "Search Crates",
+    "keyword": "crate"
+   }
+  ],
+  "preferences": [
+   {
+    "title": "Results",
+    "type": "dropdown",
+    "required": false
+   }
+  ]
+ },
+ {
+  "id": "f2.github",
+  "version": "1.0.0",
+  "name": "GitHub",
+  "description": "Your repos, pull requests, issues and Actions runs, with a failed run's log, with a token of yours.",
+  "author": "f2",
+  "network": [
+   "api.github.com",
+   "*.blob.core.windows.net"
+  ],
+  "commands": [
+   {
+    "title": "Search Repos",
+    "keyword": "gh"
+   },
+   {
+    "title": "My Pull Requests",
+    "keyword": null
+   }
+  ],
+  "preferences": [
+   {
+    "title": "Access Token",
+    "type": "password",
+    "required": true
+   }
+  ]
+ },
+ {
+  "id": "f2.hacker-news",
+  "version": "1.0.0",
+  "name": "Hacker News",
+  "description": "Hacker News' front page, Show HN and Ask HN, its search, and a story's comments read right in Quick Open.",
+  "author": "f2",
+  "network": [
+   "hacker-news.firebaseio.com",
+   "hn.algolia.com"
+  ],
+  "commands": [
+   {
+    "title": "Hacker News",
+    "keyword": "hn"
+   },
+   {
+    "title": "Show HN",
+    "keyword": null
+   },
+   {
+    "title": "Ask HN",
+    "keyword": null
+   },
+   {
+    "title": "Search Hacker News",
+    "keyword": null
+   }
+  ],
+  "preferences": [
+   {
+    "title": "Stories",
+    "type": "dropdown",
+    "required": false
+   }
+  ]
+ },
+ {
+  "id": "f2.homebrew",
+  "version": "1.0.0",
+  "name": "Homebrew",
+  "description": "Search Homebrew's formulae and casks: what each is, its version, how much it's installed, and the command to install it.",
+  "author": "f2",
+  "network": [
+   "formulae.brew.sh"
+  ],
+  "commands": [
+   {
+    "title": "Search Homebrew",
+    "keyword": "brew"
+   }
+  ],
+  "preferences": []
+ },
+ {
+  "id": "f2.jira",
+  "version": "1.0.0",
+  "name": "Jira",
+  "description": "Your Jira issues and its search, read right in Quick Open, from your Jira Cloud site with an API token of yours.",
+  "author": "f2",
+  "network": [
+   "*.atlassian.net"
+  ],
+  "commands": [
+   {
+    "title": "My Jira Issues",
+    "keyword": "jira"
+   },
+   {
+    "title": "Search Jira Issues",
+    "keyword": null
+   }
+  ],
+  "preferences": [
+   {
+    "title": "Site",
+    "type": "text",
+    "required": true
+   },
+   {
+    "title": "Email",
+    "type": "text",
+    "required": true
+   },
+   {
+    "title": "API Token",
+    "type": "password",
+    "required": true
+   }
+  ]
+ },
+ {
+  "id": "f2.kaomoji",
+  "version": "1.0.0",
+  "name": "Kaomoji",
+  "description": "A few hundred Japanese text faces, found by feeling (happy, shrug, table flip, cat…) and copied.",
+  "author": "f2",
+  "network": [],
+  "commands": [
+   {
+    "title": "Kaomoji",
+    "keyword": "kao"
+   }
+  ],
+  "preferences": []
+ },
+ {
+  "id": "f2.linear",
+  "version": "1.0.0",
+  "name": "Linear",
+  "description": "Your Linear issues, its search, and a new issue made in one of your teams, with an API key of yours.",
+  "author": "f2",
+  "network": [
+   "api.linear.app"
+  ],
+  "commands": [
+   {
+    "title": "My Linear Issues",
+    "keyword": "linear"
+   },
+   {
+    "title": "Search Linear Issues",
+    "keyword": null
+   },
+   {
+    "title": "Create Linear Issue",
+    "keyword": null
+   }
+  ],
+  "preferences": [
+   {
+    "title": "API Key",
+    "type": "password",
+    "required": true
+   }
+  ]
+ },
+ {
+  "id": "f2.lorem-ipsum",
+  "version": "1.0.0",
+  "name": "Lorem Ipsum",
+  "description": "Placeholder paragraphs, sentences and words, as many as you type, made up fresh each time.",
+  "author": "f2",
+  "network": [],
+  "commands": [
+   {
+    "title": "Lorem Ipsum",
+    "keyword": "lorem"
+   }
+  ],
+  "preferences": [
+   {
+    "title": "Start with “Lorem ipsum dolor sit amet”",
+    "type": "checkbox",
+    "required": false
+   }
+  ]
+ },
+ {
+  "id": "f2.mdn",
+  "version": "1.0.0",
+  "name": "MDN",
+  "description": "Search MDN Web Docs, and read a doc right in Quick Open.",
+  "author": "f2",
+  "network": [
+   "developer.mozilla.org"
+  ],
+  "commands": [
+   {
+    "title": "Search MDN",
+    "keyword": "mdn"
+   }
+  ],
+  "preferences": [
+   {
+    "title": "Language",
+    "type": "dropdown",
+    "required": false
+   }
+  ]
+ },
+ {
+  "id": "f2.notion",
+  "version": "1.0.0",
+  "name": "Notion",
+  "description": "Your Notion pages and databases found by title, and a page read right in Quick Open, with an integration of yours.",
+  "author": "f2",
+  "network": [
+   "api.notion.com"
+  ],
+  "commands": [
+   {
+    "title": "Search Notion",
+    "keyword": "notion"
+   }
+  ],
+  "preferences": [
+   {
+    "title": "Integration Secret",
+    "type": "password",
+    "required": true
+   }
+  ]
+ },
+ {
+  "id": "f2.npm",
+  "version": "1.0.0",
+  "name": "npm",
+  "description": "Search npm's packages: what each is, how much it's used, where its code is.",
+  "author": "f2",
+  "network": [
+   "registry.npmjs.org"
+  ],
+  "commands": [
+   {
+    "title": "Search npm Packages",
+    "keyword": "npm"
+   }
+  ],
+  "preferences": [
+   {
+    "title": "Results",
+    "type": "dropdown",
+    "required": false
+   }
+  ]
+ },
+ {
+  "id": "f2.pypi",
+  "version": "1.0.0",
+  "name": "PyPI",
+  "description": "Find Python packages on PyPI by name: what each is, its version, how much it's downloaded, and the command to install it.",
+  "author": "f2",
+  "network": [
+   "pypi.org",
+   "hugovk.dev"
+  ],
+  "commands": [
+   {
+    "title": "Search PyPI",
+    "keyword": "pypi"
+   }
+  ],
+  "preferences": []
+ },
+ {
+  "id": "f2.tailwind",
+  "version": "1.0.0",
+  "name": "Tailwind CSS",
+  "description": "Tailwind CSS's colors, every shade with its class and value, and a search of its docs.",
+  "author": "f2",
+  "network": [
+   "knpxzi5b0m-dsn.algolia.net"
+  ],
+  "commands": [
+   {
+    "title": "Tailwind Colors",
+    "keyword": "tw"
+   },
+   {
+    "title": "Search Tailwind Docs",
+    "keyword": null
+   }
+  ],
+  "preferences": [
+   {
+    "title": "Copy colors as",
+    "type": "dropdown",
+    "required": false
+   }
+  ]
+ },
+ {
+  "id": "f2.todoist",
+  "version": "1.0.0",
+  "name": "Todoist",
+  "description": "Your Todoist tasks for today and the week ahead, to complete or add right from Quick Open.",
+  "author": "f2",
+  "network": [
+   "api.todoist.com"
+  ],
+  "commands": [
+   {
+    "title": "Today",
+    "keyword": "todoist"
+   },
+   {
+    "title": "Upcoming",
+    "keyword": null
+   },
+   {
+    "title": "Add Task",
+    "keyword": null
+   }
+  ],
+  "preferences": [
+   {
+    "title": "API Token",
+    "type": "password",
+    "required": true
+   },
+   {
+    "title": "Open Tasks In",
+    "type": "dropdown",
+    "required": false
+   }
+  ]
+ },
+ {
+  "id": "f2.vercel",
+  "version": "1.0.0",
+  "name": "Vercel",
+  "description": "Your Vercel projects and their deployments, and a failed build's log, with an access token of yours.",
+  "author": "f2",
+  "network": [
+   "api.vercel.com"
+  ],
+  "commands": [
+   {
+    "title": "Vercel Projects",
+    "keyword": "vercel"
+   },
+   {
+    "title": "Recent Vercel Deployments",
+    "keyword": null
+   }
+  ],
+  "preferences": [
+   {
+    "title": "Access Token",
+    "type": "password",
+    "required": true
+   },
+   {
+    "title": "Team",
+    "type": "text",
+    "required": false
+   }
+  ]
+ },
+ {
+  "id": "f2.wikipedia",
+  "version": "1.0.0",
+  "name": "Wikipedia",
+  "description": "Search Wikipedia, and read an article right in Quick Open.",
+  "author": "f2",
+  "network": [
+   "*.wikipedia.org"
+  ],
+  "commands": [
+   {
+    "title": "Search Wikipedia",
+    "keyword": "wiki"
+   }
+  ],
+  "preferences": [
+   {
+    "title": "Language",
+    "type": "text",
+    "required": false
+   }
+  ]
+ }
+]

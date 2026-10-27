@@ -1,0 +1,5 @@
+# The oldest macOS F2 runs on: what it's built for (rustc, and cc for
+# src/macos/*.m), and LSMinimumSystemVersion in scripts/bundle-macos.sh.
+# Newer APIs need @available (build.rs makes using one without it an error).
+[env]
+MACOSX_DEPLOYMENT_TARGET = "13.0"

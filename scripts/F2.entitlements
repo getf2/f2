@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- (The hardened runtime's: F2 sends Apple Events, to Finder for the
+    Trash and its windows, and to System Events and loginwindow.) -->
+    <key>com.apple.security.automation.apple-events</key>
+    <true/>
+    <!-- (EventKit's, for Reminders: Quick Open adds reminders.) -->
+    <key>com.apple.security.personal-information.calendars</key>
+    <true/>
+    <!-- (Contacts', for Quick Open's "call mom".) -->
+    <key>com.apple.security.personal-information.addressbook</key>
+    <true/>
+    <!-- (Location's, only for the Wi-Fi network's name: macOS tells apps
+    it only once they may know where the Mac is.) -->
+    <key>com.apple.security.personal-information.location</key>
+    <true/>
+    <!-- (The microphone's, for a screen recording's sound, if Settings
+    say.) -->
+    <key>com.apple.security.device.audio-input</key>
+    <true/>
+</dict>
+</plist>

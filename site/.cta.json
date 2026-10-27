@@ -1,0 +1,20 @@
+{
+  "projectName": "site",
+  "mode": "file-router",
+  "bundler": "vite",
+  "typescript": true,
+  "tailwind": false,
+  "packageManager": "bun",
+  "git": false,
+  "install": false,
+  "intent": true,
+  "addOnOptions": {},
+  "projectPreset": "default",
+  "routerOnly": false,
+  "includeExamples": true,
+  "version": 1,
+  "framework": "react",
+  "chosenAddOns": [
+    "cloudflare"
+  ]
+}

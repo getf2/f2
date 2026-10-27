@@ -1,0 +1,18 @@
+{
+  "$schema": "../js/f2.schema.json",
+  "api": 1,
+  "id": "f2.github",
+  "name": "GitHub",
+  "description": "Your repos, pull requests, issues and Actions runs, through the gh command.",
+  "icon": "chevron.left.forwardslash.chevron.right",
+  "color": "#24292f",
+  "run": ["python3", "main.py"],
+  "commands": [
+    { "id": "repos", "title": "Search Repos", "subtitle": "GitHub", "icon": "book.closed.fill", "keyword": "gh", "refresh": "30m", "root": true },
+    { "id": "my-prs", "title": "My Pull Requests", "subtitle": "GitHub", "icon": "arrow.triangle.pull", "refresh": "5m" },
+    { "id": "prs", "title": "Pull Requests", "hidden": true },
+    { "id": "issues", "title": "Issues", "hidden": true },
+    { "id": "runs", "title": "Actions Runs", "hidden": true },
+    { "id": "run-log", "title": "Failed Run's Log", "hidden": true }
+  ]
+}

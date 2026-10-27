@@ -1,0 +1,15 @@
+{
+  "$schema": "../js/f2.schema.json",
+  "api": 1,
+  "id": "f2.cloudflare-bun",
+  "name": "Cloudflare",
+  "description": "Your Workers and Pages, and their deployments, signed in as wrangler is.",
+  "icon": "cloud.fill",
+  "color": "#f38020",
+  "run": ["bun", "index.ts"],
+  "commands": [
+    { "id": "workers", "title": "Workers & Pages", "subtitle": "Cloudflare", "icon": "cloud.fill", "keyword": "cf", "refresh": "15m", "root": true },
+    { "id": "deployments", "title": "Deployments", "hidden": true },
+    { "id": "pages-deployments", "title": "Pages Deployments", "hidden": true }
+  ]
+}

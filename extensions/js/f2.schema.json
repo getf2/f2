@@ -1,0 +1,123 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://getf2.com/schemas/f2.json",
+  "title": "F2 extension manifest (f2.json)",
+  "description": "What an F2 extension is: its commands, its settings, and what it may do. EXTENSIONS.md says all of it.",
+  "type": "object",
+  "required": ["api", "id", "name"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "api": {
+      "description": "The version of F2's extension API it's written for. An F2 with only an older one says it needs updating, and doesn't run it.",
+      "type": "integer",
+      "enum": [1]
+    },
+    "id": {
+      "description": "Yours, a dot, then its name: \"jane.linear\", in lowercase letters, digits and hyphens. In a store, yours is your GitHub account's name; \"f2.\" is F2's own. Its settings, passwords and storage are kept by it, so keep it once it's out.",
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*\\.[a-z0-9][a-z0-9-]*$",
+      "maxLength": 64
+    },
+    "version": {
+      "description": "Its version, \"1.2.0\": in the store, raised each time it changes (installed ones update to it).",
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "name": { "description": "What it's called, in Settings › Extensions and beside its commands.", "type": "string", "minLength": 1 },
+    "description": { "description": "What it does, in a sentence.", "type": "string" },
+    "icon": { "description": "An SF Symbol's name (\"cloud.fill\"), an image in its folder (\"icon.png\"), or an emoji.", "type": "string" },
+    "color": { "description": "The tile its symbols are drawn on.", "allOf": [{ "$ref": "#/definitions/color" }] },
+    "runtime": {
+      "description": "\"javascript\": its `main` is run by F2 itself, in a sandbox, nothing to install. Without it, it's a program (`run`), which runs only with Developer Mode on.",
+      "enum": ["javascript"]
+    },
+    "main": { "description": "Its script (a JavaScript one's), in its folder.", "type": "string", "default": "index.js" },
+    "run": {
+      "description": "A program's: the program and its arguments (no shell), run in its folder. Looked for in the folder, then on your PATH.",
+      "oneOf": [{ "type": "string" }, { "type": "array", "items": { "type": "string" }, "minItems": 1 }]
+    },
+    "permissions": {
+      "description": "What a JavaScript one may do beyond showing things.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "network": {
+          "description": "The hosts its `fetch` may reach, over https: \"api.github.com\", or \"*.github.com\" for any under it (and it).",
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "commands": { "description": "Its commands, in Quick Open.", "type": "array", "items": { "$ref": "#/definitions/command" } },
+    "preferences": { "description": "Its settings, in Settings › Extensions, given to it each time it runs.", "type": "array", "items": { "$ref": "#/definitions/preference" } }
+  },
+  "anyOf": [{ "required": ["runtime"] }, { "required": ["run"] }],
+  "definitions": {
+    "color": {
+      "description": "\"#rrggbb\", \"#rgb\", or one of red, orange, yellow, green, mint, teal, blue, indigo, purple, pink, gray, brown.",
+      "type": "string",
+      "anyOf": [
+        { "pattern": "^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$" },
+        { "enum": ["red", "orange", "yellow", "green", "mint", "teal", "blue", "indigo", "purple", "pink", "gray", "grey", "brown"] }
+      ]
+    },
+    "command": {
+      "type": "object",
+      "required": ["id", "title"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "description": "What the script (or program) is told: `f2.command(id, …)`.", "type": "string" },
+        "title": { "description": "How it's listed in Quick Open.", "type": "string" },
+        "subtitle": { "description": "Beside its title, grayer (else the extension's name).", "type": "string" },
+        "icon": { "description": "As the extension's `icon`.", "type": "string" },
+        "keyword": { "description": "Typed first (\"gh f2\"), its rows are searched for the rest, right in Quick Open's results.", "type": "string" },
+        "refresh": {
+          "description": "How long what it showed stays fresh (\"45s\", \"30m\", \"2h\", \"1d\"): opened again within it, it isn't run again (⌘R runs it).",
+          "type": "string",
+          "pattern": "^\\s*\\d+\\s*[smhd]\\s*$"
+        },
+        "search": {
+          "description": "Who looks through its rows as you type: \"f2\" (the default), or \"script\": run again for each query.",
+          "enum": ["f2", "script"]
+        },
+        "root": { "description": "Its rows are found by what's typed in Quick Open's own search too.", "type": "boolean" },
+        "hidden": { "description": "Not a command of its own: only opened from another page (`push`).", "type": "boolean" }
+      }
+    },
+    "preference": {
+      "type": "object",
+      "required": ["id", "title"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "description": "What it's given as: `f2.preferences[id]`.", "type": "string" },
+        "title": { "type": "string" },
+        "type": {
+          "description": "A password is kept in the keychain, typed where it isn't shown.",
+          "enum": ["text", "password", "checkbox", "dropdown", "number"],
+          "default": "text"
+        },
+        "description": { "type": "string" },
+        "placeholder": { "type": "string" },
+        "required": { "description": "Its commands go to its settings instead till it's set.", "type": "boolean" },
+        "default": { "description": "What it is till it's set." },
+        "options": {
+          "description": "A dropdown's: values, or { value, title }.",
+          "type": "array",
+          "items": {
+            "oneOf": [
+              { "type": "string" },
+              {
+                "type": "object",
+                "required": ["value", "title"],
+                "additionalProperties": false,
+                "properties": { "value": { "type": "string" }, "title": { "type": "string" } }
+              }
+            ]
+          }
+        },
+        "link": { "description": "Where to get one (a token): a \"Get One…\" link beside it.", "type": "string" }
+      }
+    }
+  }
+}

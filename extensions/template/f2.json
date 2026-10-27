@@ -1,0 +1,17 @@
+{
+  "$schema": "./f2.schema.json",
+  "api": 1,
+  "id": "__ID__",
+  "version": "1.0.0",
+  "name": "__NAME__",
+  "description": "What it does, in a sentence.",
+  "icon": "sparkles",
+  "color": "indigo",
+  "runtime": "javascript",
+  "main": "index.js",
+  "permissions": { "network": [] },
+  "commands": [
+    { "id": "hello", "title": "__NAME__", "subtitle": "Your new extension" },
+    { "id": "more", "title": "More", "hidden": true }
+  ]
+}

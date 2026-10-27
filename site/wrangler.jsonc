@@ -1,0 +1,78 @@
+/**
+ * For more details on how to configure Wrangler, refer to:
+ * https://developers.cloudflare.com/workers/wrangler/configuration/
+ */
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "f2-site",
+	// The "Mucho" account, which also has getf2.com and the f2-updates bucket
+	// (download.getf2.com).
+	"account_id": "913ea66e4789612e4d55d396e3ffed24",
+	// getf2.com is the site; www and workers.dev redirect to it (src/server.ts).
+	"routes": [
+		{ "pattern": "getf2.com", "custom_domain": true },
+		{ "pattern": "www.getf2.com", "custom_domain": true }
+	],
+	"workers_dev": true,
+	"compatibility_date": "2026-10-19",
+	"compatibility_flags": [
+		"nodejs_compat"
+	],
+	// src/server.ts wraps TanStack Start: 301 www/workers.dev → getf2.com,
+	// /favicon.ico, and noindex on 404s.
+	"main": "src/server.ts",
+	"observability": {
+		"enabled": true
+	},
+	// F2's crash reports and feedback (src/reports.ts): emailed to
+	// leo@getf2.com (Repliqo's F2 inbox; verified as an Email Routing
+	// destination, which is what makes sending free) from mail.getf2.com, the
+	// zone's sending subdomain, and to no one else; a few a minute from any
+	// one address at most.
+	"send_email": [
+		{
+			"name": "EMAIL",
+			"destination_address": "leo@getf2.com",
+			"allowed_sender_addresses": ["reports@mail.getf2.com"]
+		}
+	],
+	"ratelimits": [{ "name": "REPORT_LIMIT", "namespace_id": "1001", "simple": { "limit": 6, "period": 60 } }],
+	"upload_source_maps": true,
+	// Pages are prerendered as features/index.html and the like: serve them at
+	// /features, as the site links to them, rather than redirecting to /features/.
+	// Pages go through the Worker first, for its redirects; scripts, styles,
+	// fonts and images straight from the assets.
+	"assets": {
+		"html_handling": "drop-trailing-slash",
+		"binding": "ASSETS",
+		"run_worker_first": ["/*", "!/assets/*", "!/img/*"]
+	}
+	/**
+	 * Smart Placement
+	 * https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement
+	 */
+	// "placement": {  "mode": "smart" }
+	/**
+	 * Bindings
+	 * Bindings allow your Worker to interact with resources on the Cloudflare Developer Platform, including
+	 * databases, object storage, AI inference, real-time communication and more.
+	 * https://developers.cloudflare.com/workers/runtime-apis/bindings/
+	 */
+	/**
+	 * Environment Variables
+	 * https://developers.cloudflare.com/workers/wrangler/configuration/#environment-variables
+	 * Note: Use secrets to store sensitive data.
+	 * https://developers.cloudflare.com/workers/configuration/secrets/
+	 */
+	// "vars": {  "MY_VARIABLE": "production_value" }
+	/**
+	 * Static Assets
+	 * https://developers.cloudflare.com/workers/static-assets/binding/
+	 */
+	// "assets": {  "directory": "./public/",  "binding": "ASSETS" }
+	/**
+	 * Service Bindings (communicate between multiple Workers)
+	 * https://developers.cloudflare.com/workers/wrangler/configuration/#service-bindings
+	 */
+	// "services": [  {   "binding": "MY_SERVICE",   "service": "my-service"  } ]
+}

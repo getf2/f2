@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: An extension, or an idea for one
+    url: https://github.com/getf2/extensions/issues/new/choose
+    about: The Extension Store's extensions are in their own repo, with their own issues.
+  - name: Something private
+    url: https://getf2.com/privacy
+    about: For what shouldn't be public, Help › Send Feedback in F2 goes to its maker alone.

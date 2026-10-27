@@ -14,7 +14,7 @@ An extension adds commands to Quick Open. It's a folder with a manifest
 
 Both show the same things: the messages, rows, pages and actions below.
 
-They go in `~/Library/Application Support/NewFinder/Extensions/`, one
+They go in `~/Library/Application Support/F2/Extensions/`, one
 folder each ("Extensions Folder" in Quick Open opens it), called anything:
 what an extension's known by is the `id` in its manifest. Those from the
 store (Settings › Extensions › Browse) are installed there for you.

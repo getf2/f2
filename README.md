@@ -77,7 +77,7 @@ to be given again after each one. (Grants go with the certificate: after
 a switch between them, they're given once more.)
 
 Settings, folders' views, Favorites and the window's frame are kept in
-`~/Library/Application Support/NewFinder/settings.json`; its log, in
+`~/Library/Application Support/F2/settings.json`; its log, in
 `Logs/F2.log` there (Help > Show Log File), when it's opened as an app.
 
 ## Releases

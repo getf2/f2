@@ -1,0 +1,43 @@
+name: An idea
+description: Something F2 could do, or do better.
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Ideas are welcome. F2 is made by one person, for the fun of it, so not every one gets made, but every one gets read.
+        If it's a command for a service you use (Linear, Spotify, your own API…), it may be better as an extension: ideas for those go to [getf2/extensions](https://github.com/getf2/extensions/issues/new/choose).
+  - type: textarea
+    id: what
+    attributes:
+      label: What you'd like
+      description: What you'd do, and what F2 would do then.
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: What it's for
+      description: What you're trying to get done, and how you do it now (in Finder, Raycast, another app…).
+    validations:
+      required: true
+  - type: dropdown
+    id: part
+    attributes:
+      label: Which part of F2
+      options:
+        - The window (files and folders)
+        - Quick Open
+        - Disk space (Disk Usage, Free Up Space, Tidy Up, Folder Rules)
+        - Screenshots and recordings
+        - Window management
+        - Extensions (F2's API for them)
+        - Something new
+  - type: dropdown
+    id: pr
+    attributes:
+      label: Would you make it?
+      description: If we agree on it here, a pull request from you is welcome.
+      options:
+        - No, just the idea
+        - Yes, I'd like to make it

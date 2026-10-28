@@ -1,0 +1,52 @@
+name: Something's wrong
+description: F2 did something it shouldn't, or didn't do what it should.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for telling us. If F2 quit unexpectedly, the next time it's opened it offers to send macOS's report: please do, and say here when it happened.
+        Something wrong with an extension from the Extension Store goes to [getf2/extensions](https://github.com/getf2/extensions/issues/new/choose).
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: And what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: How to make it happen
+      description: The steps, from opening F2. If it only happens with some files or folders, what's special about them.
+      placeholder: |
+        1. Open a folder with…
+        2. Press…
+        3. …
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: F2's version
+      description: F2 › About F2, e.g. "0.2.0 (189)".
+    validations:
+      required: true
+  - type: input
+    id: macos
+    attributes:
+      label: macOS and Mac
+      description: Apple menu › About This Mac, e.g. "macOS 26.1, MacBook Pro M1 Pro".
+    validations:
+      required: true
+  - type: textarea
+    id: log
+    attributes:
+      label: From F2's log
+      description: Help › Show Log File. The lines from around when it happened, if any look related. Check them for anything private first.
+      render: text
+  - type: textarea
+    id: more
+    attributes:
+      label: Anything else
+      description: Screenshots, a screen recording, whether it happened in an earlier version.

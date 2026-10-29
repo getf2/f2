@@ -1,0 +1,12 @@
+# The actions the workflows use, kept up to date: one pull request a week,
+# at most. (Security fixes for Cargo's and the site's packages come on their
+# own, from Dependabot's security updates in the repo's settings.)
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]

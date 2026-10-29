@@ -38,7 +38,7 @@ function Extensions() {
   const [list, setList] = useState<Listed[]>(SNAPSHOT)
   useEffect(() => {
     fetch(`${STORE}v1/index.json`)
-      .then((r) => (r.ok ? r.json() : null))
+      .then((r) => (r.ok ? (r.json() as Promise<{ extensions?: Listed[] }>) : null))
       .then((index) => index?.extensions?.length && setList(index.extensions))
       .catch(() => {})
   }, [])

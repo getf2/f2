@@ -560,10 +560,14 @@ pub fn locate_zoned(name: &str) -> Option<(String, (f32, f32), String)> {
 /// The city of this Mac's time zone (Seoul's, for Asia/Seoul): the biggest
 /// there.
 pub fn here() -> Option<(String, (f32, f32))> {
-    let zone = crate::macos::local_zone();
+    zone_city(&crate::macos::local_zone())
+}
+
+/// A time zone's city. (None for UTC's, a Mac set to UTC's: GitHub's.)
+fn zone_city(zone: &str) -> Option<(String, (f32, f32))> {
     let city = zone.rsplit('/').next().unwrap_or("").replace('_', " ");
     // (By the zone's city's name, else the zone's biggest city.)
-    locate(&city).or_else(|| places().cities.iter().find(|c| known(c.zone).as_deref() == Some(zone.as_str())).map(|c| (city_label(c), c.at)))
+    locate(&city).or_else(|| places().cities.iter().find(|c| known(c.zone).as_deref() == Some(zone)).map(|c| (city_label(c), c.at)))
 }
 
 /// A time of day at the start: "3pm", "3:30 pm", "15:00", "9.30am",
@@ -788,6 +792,15 @@ mod tests {
 
     fn labels(name: &str) -> Vec<String> {
         find(name, false).into_iter().map(|p| p.label).collect()
+    }
+
+    #[test]
+    fn zones_cities() {
+        let city = |zone| super::zone_city(zone).map(|(label, _)| label);
+        assert_eq!(city("Asia/Tokyo").as_deref(), Some("Tokyo, Japan"));
+        assert_eq!(city("Atlantic/Reykjavik").as_deref(), Some("Reykjavík, Iceland"));
+        assert!(city("America/Argentina/Buenos_Aires").is_some_and(|label| label.starts_with("Buenos Aires")));
+        assert_eq!(city("UTC"), None);
     }
 
     #[test]

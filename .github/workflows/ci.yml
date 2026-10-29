@@ -1,0 +1,45 @@
+# Each pull request (and main) checked: F2 built and its tests run, on a
+# Mac (cargo test), and the site (site/) type-checked and built.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# (A pull request's newer push cancels its older run; main's runs all finish.)
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  app:
+    name: App
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: rustup toolchain install stable --profile minimal && rustup default stable
+      # (What's built, kept between runs: main's, for every pull request.)
+      - uses: Swatinem/rust-cache@v2
+      - name: Test
+        run: cargo test --locked
+
+  site:
+    name: Site
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: site
+    steps:
+      - uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.4
+      - run: bun install --frozen-lockfile
+      - name: Types
+        run: bunx tsc --noEmit
+      - name: Build
+        run: bun run build

@@ -56,7 +56,12 @@ built with them).
 ```
 ./scripts/bundle-macos.sh --install   # builds F2.app into /Applications
 cargo run --release -- ~/Developer    # or run it from here, opening there
+cargo test                            # its tests
 ```
+
+Each pull request is checked by GitHub
+([`.github/workflows/ci.yml`](.github/workflows/ci.yml)): F2 built and its
+tests run on a Mac, and the site type-checked and built.
 
 The first launch crawls the whole disk into fsearch's index (about 20 s
 for 4M entries) at `~/Library/Application Support/FSearch`, the same one

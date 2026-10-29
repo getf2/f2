@@ -187,7 +187,7 @@ mod tests {
 
     #[test]
     fn places() {
+        // (Without a name, the time zone's city: world_time's zones_cities.)
         assert!(super::place(Some("tokyo")).is_some_and(|(label, (lat, _))| label.starts_with("Tokyo") && (lat - 35.7).abs() < 0.5));
-        assert!(super::place(None).is_some(), "the time zone's city");
     }
 }

@@ -487,7 +487,7 @@ export const CATEGORIES: Category[] = [
   {
     id: 'clipboard',
     name: 'Copy, paste, type less',
-    lede: 'Everything you copy, kept, plus emoji and shortcuts for what you type again and again.',
+    lede: 'Everything you copy, kept, plus emoji and shortcuts for what you type again and again. Or say it, and it’s typed for you.',
     art: {
       paint: 'mist-forest',
       y: '55%',
@@ -529,6 +529,28 @@ export const CATEGORIES: Category[] = [
         name: 'Snippets',
         text: 'Type a short keyword in any app and it becomes your text, with today’s date or what you copied filled in.',
         examples: [';date'],
+      },
+      {
+        name: 'Dictation',
+        text: 'Hold a key in any app, say what you want to write, and let go: it’s typed where you were. Worked out on your Mac, in 30 languages, and nothing you say is sent anywhere. On macOS 26 or later.',
+        keys: ['Right ⌥'],
+        since: '0.2.1',
+      },
+      {
+        name: 'Hands-free',
+        text: 'Press the key twice to keep talking without holding it, or set it to start with one press and stop with the next. Esc stops without typing a thing.',
+        since: '0.2.1',
+      },
+      {
+        name: 'AirPods keep their sound',
+        text: 'With AirPods in, F2 listens through your Mac’s own microphone, so your music doesn’t drop to call quality. Or pick a microphone yourself.',
+        since: '0.2.1',
+      },
+      {
+        name: 'Paste Last Dictation',
+        text: 'Lost what you said? Quick Open pastes it again.',
+        examples: ['last dictation'],
+        since: '0.2.1',
       },
       { name: 'Quicklinks', text: 'Open a site or a folder by keyword: “gh rust” searches GitHub.', examples: ['gh rust'] },
     ],

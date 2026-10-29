@@ -8,7 +8,7 @@ import { useReveal } from '#/lib/useReveal'
 
 const TITLE = 'Privacy · F2 for Mac'
 const DESCRIPTION = 'What F2 sends from your Mac, and when: never your files, and a crash report only if you say so.'
-const UPDATED = '24 October 2026'
+const UPDATED = '29 October 2026'
 const CONTACT = 'leo@getf2.com'
 
 export const Route = createFileRoute('/privacy')({
@@ -48,6 +48,13 @@ function Privacy() {
           </p>
         </Part>
 
+        <Part title="Your voice">
+          <p>
+            Dictation hears your microphone only while you dictate, and turns what you say into text on your Mac,
+            with Apple's own speech recognition. What it hears isn't sent anywhere or kept; only the last text
+            stays, until F2 quits, for Paste Last Dictation.
+          </p>
+        </Part>
         <Part title="No tracking">
           <p>
             No analytics, no ads and no account. F2 doesn't count what you do or report how you use it, and there's
@@ -67,6 +74,9 @@ function Privacy() {
               prices (CoinGecko, Coinbase, Yahoo Finance), public holidays (Nager.Date), sports scores (NBA), your
               internet address (ipify), and whether you're online (Apple). They learn what you asked about, and
               nothing else of yours.
+            </li>
+            <li>
+              <b>Dictation's languages.</b> The first time you dictate in one, macOS downloads it from Apple.
             </li>
             <li>
               <b>Links</b> F2 offers, like maps, package tracking or a translation, open in your browser.

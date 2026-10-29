@@ -19,7 +19,7 @@ export const QUESTIONS = [
   { q: 'What does it cost?', a: 'Nothing. F2 is free, and open source: its code is at github.com/getf2/f2.' },
   {
     q: 'Which Macs does it run on?',
-    a: `Any Mac on macOS ${MIN_MACOS} Ventura or later: Apple silicon (M1 and later) and Intel.`,
+    a: `Any Mac on macOS ${MIN_MACOS} Ventura or later: Apple silicon (M1 and later) and Intel. Dictation needs macOS 26 Tahoe.`,
   },
   {
     q: 'Does it send my files anywhere?',

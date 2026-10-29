@@ -19,6 +19,19 @@ export type Release = {
 
 export const RELEASES: Release[] = [
   {
+    version: '0.2.1',
+    title: 'Say it, and it’s typed',
+    summary: 'Hold a key in any app, say what you want to write, and let go: F2 types it for you. It’s all worked out on your Mac, and your AirPods keep playing music as they should.',
+    art: { paint: 'study-window', y: '50%', glass: 'dictation' },
+    added: [
+      'Dictation, in any app: hold Right ⌥ (or a key of your own, or two together), speak, and let go. What you said is typed where you were, a moment later. Turn it on in Settings › Dictation, on Macs with macOS 26 or later.',
+      'Press the key twice to keep talking hands-free, then once more when you’re done. Or set it to start with one press and stop with the next. Esc stops without typing anything.',
+      'It listens in 30 languages, with Apple’s own speech recognition, on your Mac: nothing you say is sent anywhere, and no recording is kept. A small pill at the bottom of the screen moves with your voice while it listens.',
+      'With AirPods in, F2 listens through your Mac’s own microphone, so your music doesn’t drop to call quality. Or pick a microphone yourself.',
+      'Paste Last Dictation, in Quick Open, pastes the last thing you said again.',
+    ],
+  },
+  {
     version: '0.2.0',
     date: '2026-10-27',
     title: 'Extensions, and a store for them',

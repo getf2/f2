@@ -24,7 +24,7 @@ export type Art = {
   // The painting's vertical position, as background-position's.
   y?: string
   shots?: Shot[]
-  glass?: 'menu' | 'snap' | 'marquee' | 'recording'
+  glass?: 'menu' | 'snap' | 'marquee' | 'recording' | 'dictation'
   queries?: string[]
 }
 
@@ -56,6 +56,7 @@ export function Plate({ art }: { art: Art }) {
       {art.glass === 'menu' && <Menu />}
       {art.glass === 'snap' && <Snap />}
       {(art.glass === 'marquee' || art.glass === 'recording') && <Marquee recording={art.glass === 'recording'} />}
+      {art.glass === 'dictation' && <Dictation />}
     </div>
   )
 }
@@ -95,6 +96,21 @@ function Marquee({ recording }: { recording: boolean }) {
       <i />
       <i />
       <span>{recording ? '0:42' : '1280 × 720'}</span>
+    </div>
+  )
+}
+
+// What was said, typed out, over the pill that listens at the bottom of the
+// screen, its bars moving with a voice.
+function Dictation() {
+  return (
+    <div className="g-dictation" aria-hidden="true">
+      <p>Running ten minutes late, save me a seat by the window</p>
+      <div>
+        {Array.from({ length: 9 }, (_, i) => (
+          <i key={i} style={{ animationDelay: `${-((i * 0.37) % 1.1).toFixed(2)}s` }} />
+        ))}
+      </div>
     </div>
   )
 }

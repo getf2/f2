@@ -38,11 +38,11 @@ const TOOLS = [
     how: 'Halves, thirds and quarters',
   },
   {
-    title: 'Emoji, by name',
+    title: 'Say it instead of typing',
     art: 'mist-forest',
     at: 'center 55%',
-    text: 'Every emoji, arrow and symbol, found by what it is. Type ":" and a word in any search.',
-    how: ':check · :+1 · :arrow',
+    text: "Hold a key in any app, say what you want to write, and let go: it's typed for you, worked out on your Mac.",
+    how: 'Settings › Dictation, on macOS 26',
   },
 ]
 

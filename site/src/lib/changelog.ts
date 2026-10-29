@@ -20,6 +20,7 @@ export type Release = {
 export const RELEASES: Release[] = [
   {
     version: '0.2.1',
+    date: '2026-10-29',
     title: 'Say it, and it’s typed',
     summary: 'Hold a key in any app, say what you want to write, and let go: F2 types it for you. It’s all worked out on your Mac, and your AirPods keep playing music as they should.',
     art: { paint: 'study-window', y: '50%', glass: 'dictation' },

@@ -287,6 +287,16 @@ more detail.
 - **Drag a window with keys held** (⌃⌘, or ⌥⌘, ⌃⌥, or off, in Settings › Windows): drag from anywhere in a window to move it, or from near an edge or a corner to size it from there. The app underneath never sees the click.
 - **Switch Window**: every window open, not just apps as ⌘Tab has them, front to back (minimized, hidden and those on other desktops too, marked; picking one there goes to its desktop), with a picture of the one picked beside the list (with Screen Recording allowed; a minimized one, its app's icon). Type to find one by its title or app. Give it a shortcut (⌥Tab, say) in Settings › Keyboard: hold its modifier, press again to go on, let go to switch, as ⌘Tab does.
 
+## Dictation
+- **Hold a key, speak, let go** (Settings › Dictation; macOS 26): what you said is typed where you're typing, in any app. Apple's own speech recognition does it, on the Mac: nothing is sent anywhere and no recording is kept.
+- The shortcut is one key held alone (Right ⌥, Right ⌘, Fn, a function key) or two together (⌃⌥, ⌥Space): pick one, or hold the keys you'd like. Holding it with another key (⌥E for é) is the app's, not dictation.
+- **Hands-free**: press the shortcut twice to keep listening, then once more to finish. Or set it to **Press to start, again to stop** instead of holding. Escape stops, pasting nothing.
+- A pill at the bottom of the screen moves with your voice while it listens.
+- **Microphone**: Automatic (Sound settings' input, but not Bluetooth headphones': AirPods would switch to call quality, so the Mac's own stands in, unless its lid's closed), Same as Sound Settings, or one you pick.
+- In 30 languages and dialects (English, French, German, Spanish, Italian, Portuguese, Chinese, Cantonese, Japanese, Korean), this Mac's own unless you pick one; macOS downloads each language's model the first time.
+- **Paste Last Dictation**, in Quick Open, pastes the last one again.
+- After [Hex](https://github.com/anomalyco/hex)'s dictation, by Kit Langton.
+
 ## Disk space
 - **Disk Usage**, like DaisyDisk:
   - A ring chart of what takes up a disk. Click a slice to go in; right-click to show it in F2 or trash it.
@@ -325,8 +335,8 @@ more detail.
   - Each with a reason and a button.
   - Optional: Calendar, Reminders and the Do Not Disturb shortcut, for Quick Open.
   - It also lets you pick Quick Open's shortcut, points out shortcuts that clash, offers window shortcuts, and suggests things to try.
-- **Settings › Permissions** lists all of them, plus Calendar, Reminders and Contacts. macOS also asks, the first time each is used, to let F2 control Notes, use Bluetooth, and (only to tell which Wi-Fi network you're on) know your location.
-- **Settings**: General, Quick Open, Quicklinks, Snippets, Clipboard, Windows, Screenshots, Sidebar, Advanced, Permissions. ⌘, only ever opens one Settings window.
+- **Settings › Permissions** lists all of them, plus Calendar, Reminders, Contacts and the microphone. macOS also asks, the first time each is used, to let F2 control Notes, use Bluetooth, and (only to tell which Wi-Fi network you're on) know your location.
+- **Settings**: General, Quick Open, Quicklinks, Snippets, Clipboard, Dictation, Windows, Screenshots, Sidebar, Advanced, Permissions. ⌘, only ever opens one Settings window.
 - **Updates**: Sparkle, from download.getf2.com, with a notarized DMG laid out for dragging F2 into Applications.
 - **Other**:
   - About and Acknowledgements (every dependency's license).

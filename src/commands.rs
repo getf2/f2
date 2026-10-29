@@ -552,6 +552,20 @@ fn catalog() -> Vec<(&'static str, Command)> {
         "quicklink new create add link bookmark",
         command("quicklink-new".into(), "Create Quicklink".into(), crate::APP_NAME, "Command", Icon::Tile("link.badge.plus", QUICKLINKS), Run::SettingsAt("quicklinks")),
     ));
+    if crate::dictation::available() {
+        all.push((
+            "dictation dictate voice speech talk speak microphone mic transcribe speech to text voice typing|dictation settings|voice typing",
+            command("dictation".into(), "Dictation Settings".into(), crate::APP_NAME, "Command", Icon::Tile("mic.fill", crate::dictation::COLOR), Run::SettingsAt("dictation")),
+        ));
+        if let Some(text) = crate::dictation::last() {
+            let shown: String = text.chars().take(60).collect();
+            let shown = if shown.len() < text.len() { format!("{shown}…") } else { shown };
+            all.push((
+                "paste last dictation again dictated voice speech said|paste last dictation|paste dictation",
+                command("dictation:last".into(), "Paste Last Dictation".into(), &shown, "Command", Icon::Tile("mic.fill", crate::dictation::COLOR), Run::PasteText(text)),
+            ));
+        }
+    }
     all.push((
         "keyboard shortcuts hotkeys hot keys keybinds keybindings key bindings bind keys|keyboard shortcuts|set a shortcut",
         command("keyboard".into(), "Keyboard Shortcuts".into(), crate::APP_NAME, "Command", Icon::Tile("keyboard.fill", FINDER2), Run::SettingsAt("keyboard")),

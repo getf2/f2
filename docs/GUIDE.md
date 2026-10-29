@@ -246,6 +246,26 @@ Accessibility, keeps only the last few characters typed, and hears
 nothing in password fields. Both are set in Settings > Quicklinks and
 Snippets.
 
+**Dictation** (Settings > Dictation, on macOS 26), after Hex's: hold its
+shortcut in any app, speak, and let go; what you said is pasted where
+you're typing, the clipboard put back after. The shortcut is a key held
+alone (Right ⌥ at first; Right ⌘, Fn, a function key) or two together
+(⌃⌥, ⌥Space), picked or recorded by holding them. Held with another key
+(⌥E), it's the app's, and nothing's heard. Pressed twice, it keeps
+listening hands-free until it's pressed again; or, set to Press, it's
+pressed once to start and again to finish. Escape stops, pasting
+nothing; ten minutes is the most. A pill at the bottom of the screen
+moves with your voice, then waves while the words are worked out. Apple's
+speech recognition does that on the Mac (SpeechAnalyzer), in the Mac's
+language or the one picked, macOS downloading its model the first time;
+nothing is sent, and only the last text is kept, for Quick Open's Paste
+Last Dictation. It listens through Sound settings' input, unless that's
+Bluetooth headphones (AirPods switch to call quality while their
+microphone's on): then the Mac's own, unless the lid's closed. Settings
+can say Sound settings' input whatever it is, or one microphone. It
+takes the microphone, and Accessibility (to hear the shortcut and
+paste).
+
 **For developers:** "kill port 3000" or "ports" lists what's listening
 (servers: apps and macOS's own only when their port's asked for, and
 then it asks first), and Return stops it. Repos are found by name

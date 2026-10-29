@@ -1,9 +1,9 @@
 //! What F2 asks macOS for, and why: Full Disk Access (every folder seen
 //! and searched), Accessibility (windows moved, pasting, snippets'
 //! keywords), Screen Recording (screenshots), reading the clipboard (its
-//! history); and, for Quick Open, the calendar and Reminders. Each as it is
-//! now, with what grants it: the welcome and Settings > Permissions show
-//! them.
+//! history); for Quick Open, the calendar and Reminders; and for
+//! dictation, the microphone. Each as it is now, with what grants it: the
+//! welcome and Settings > Permissions show them.
 
 use gpui::prelude::FluentBuilder as _;
 use gpui::*;
@@ -20,10 +20,11 @@ pub enum Permission {
     Calendar,
     Reminders,
     Contacts,
+    Microphone,
 }
 
 impl Permission {
-    pub const ALL: [Permission; 7] = [
+    pub const ALL: [Permission; 8] = [
         Permission::FullDisk,
         Permission::Accessibility,
         Permission::ScreenRecording,
@@ -31,6 +32,7 @@ impl Permission {
         Permission::Calendar,
         Permission::Reminders,
         Permission::Contacts,
+        Permission::Microphone,
     ];
     /// Those most of F2 needs (the calendar and Reminders are asked for on
     /// their own, as only Quick Open's events and reminders need them).
@@ -46,6 +48,7 @@ impl Permission {
             Permission::Calendar => ("Calendar", "Add events as you say them in Quick Open, and see what's next.", "calendar", 0xff3b30),
             Permission::Reminders => ("Reminders", "Add reminders from Quick Open, with an alert at the time.", "checklist", 0xff9500),
             Permission::Contacts => ("Contacts", "Call, message and email people from Quick Open: “call mom”.", "person.crop.circle.fill", 0x8e8e93),
+            Permission::Microphone => ("Microphone", "Dictate in any app, and have your voice in screen recordings.", "mic.fill", crate::dictation::COLOR),
         }
     }
 
@@ -59,6 +62,7 @@ impl Permission {
             Permission::Calendar => macos::calendar_access() == Some(true),
             Permission::Reminders => macos::reminders_access() == Some(true),
             Permission::Contacts => macos::contacts_access() == Some(true),
+            Permission::Microphone => macos::mic_access() == Some(true),
         }
     }
 
@@ -95,6 +99,10 @@ impl Permission {
                 None => ask_waiting(macos::contacts_request, cx),
                 _ => cx.open_url("x-apple.systempreferences:com.apple.preference.security?Privacy_Contacts"),
             },
+            Permission::Microphone => match macos::mic_access() {
+                None => macos::mic_request(),
+                _ => cx.open_url("x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone"),
+            },
         }
     }
 
@@ -109,15 +117,16 @@ impl Permission {
             Permission::Calendar if macos::calendar_access().is_none() => return None,
             Permission::Reminders if macos::reminders_access().is_none() => return None,
             Permission::Contacts if macos::contacts_access().is_none() => return None,
+            Permission::Microphone if macos::mic_access().is_none() => return None,
             Permission::Calendar => "Turn F2 on in the list (Full Access, to see what's next).",
-            Permission::Reminders | Permission::Contacts => "Turn F2 on in the list.",
+            Permission::Reminders | Permission::Contacts | Permission::Microphone => "Turn F2 on in the list.",
         })
     }
 
     /// Its button: "Allow…", or where macOS won't ask again, "Open Settings…".
     pub fn button(self) -> &'static str {
         match self {
-            Permission::Calendar | Permission::Reminders | Permission::Contacts if self.hint().is_some() => "Open Settings…",
+            Permission::Calendar | Permission::Reminders | Permission::Contacts | Permission::Microphone if self.hint().is_some() => "Open Settings…",
             _ => "Allow…",
         }
     }

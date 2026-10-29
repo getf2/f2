@@ -197,7 +197,7 @@ fn unshifted(key: &str) -> (String, bool) {
 }
 
 /// The virtual key code (an ANSI keyboard's) of a key as GPUI names it.
-fn key_code(key: &str) -> Option<u32> {
+pub(crate) fn key_code(key: &str) -> Option<u32> {
     const LETTERS: [u32; 26] = [0, 11, 8, 2, 14, 3, 5, 4, 34, 38, 40, 37, 46, 45, 31, 35, 12, 15, 1, 17, 32, 9, 13, 7, 16, 6];
     const DIGITS: [u32; 10] = [29, 18, 19, 20, 21, 23, 22, 26, 28, 25];
     const FUNCTION: [u32; 12] = [122, 120, 99, 118, 96, 97, 98, 100, 101, 109, 103, 111];

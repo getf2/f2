@@ -2,9 +2,9 @@
 
 F2 is a [GPUI](https://gpui.rs) app in Rust, with what macOS gives only
 to Objective-C or Swift in `src/macos/` (`.m` files, and
-`translate.swift`), called through `src/macos.rs`. Search is
-[fsearch](https://github.com/noahdunnagan/fsearch), linked in (vendored in
-`vendor/fsearch`).
+`translate.swift` and `speech.swift`), called through `src/macos.rs`.
+Search is [fsearch](https://github.com/noahdunnagan/fsearch), linked in
+(vendored in `vendor/fsearch`).
 
 ## The window, as Finder's
 
@@ -87,6 +87,17 @@ to Objective-C or Swift in `src/macos/` (`.m` files, and
   draws), `editor`, `preview` (the corner), `pin`, `record` (screen
   recording), `scrolling` (Scrolling Capture).
 - `src/windows.rs` window management; `src/screens.rs` which screen.
+
+## Dictation
+
+- `src/dictation.rs` its shortcut (one key or two), hold to talk (press
+  twice for hands-free) or press to start and stop, and the `Engine` that
+  turns speech into text (Apple's now; another, as Hex's Parakeet, would
+  be one more);
+  `src/settings_window/dictation.rs` its settings.
+- `src/macos/dictation.m` the keys (an event tap), the microphone (16 kHz
+  mono) and the pill; `src/macos/speech.swift` Apple's SpeechAnalyzer
+  (adapted from [Hex](https://github.com/anomalyco/hex)'s, MIT).
 
 ## The app
 

@@ -346,6 +346,7 @@ pub struct Settings {
     /// surface less each (see `macos::set_drawables`).
     pub lean_drawing: bool,
     pub shots: Shots,
+    pub dictation: Dictation,
     /// Extensions in Quick Open (src/extensions.rs, EXTENSIONS.md): on
     /// unless set false, here, by hand. See `extensions_on`.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -474,6 +475,38 @@ impl Default for Shots {
     }
 }
 
+/// Dictation (src/dictation.rs): on, with its shortcut in any app
+/// ("right-option", "control+option": see `dictation::Shortcut`), held or
+/// pressed (`mode`), in a language (BCP 47, "en-US"; None: this Mac's),
+/// heard through a microphone (its UID; "system": Sound settings'; None:
+/// by itself, not Bluetooth headphones': see `macos::mic_chosen`).
+#[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
+#[serde(default)]
+pub struct Dictation {
+    pub on: bool,
+    pub shortcut: String,
+    pub mode: DictationMode,
+    pub language: Option<String>,
+    pub microphone: Option<String>,
+}
+
+impl Default for Dictation {
+    fn default() -> Self {
+        Dictation { on: false, shortcut: crate::dictation::DEFAULT_SHORTCUT.into(), mode: DictationMode::Hold, language: None, microphone: None }
+    }
+}
+
+/// How dictation's shortcut is used.
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Default, Serialize, Deserialize)]
+pub enum DictationMode {
+    /// Held while you speak (pressed twice: hands-free, till it's pressed
+    /// again).
+    #[default]
+    Hold,
+    /// Pressed to start, and again to finish.
+    Press,
+}
+
 impl Default for Settings {
     fn default() -> Self {
         Settings {
@@ -531,6 +564,7 @@ impl Default for Settings {
             dual_pane: false,
             lean_drawing: true,
             shots: Shots::default(),
+            dictation: Dictation::default(),
             extensions: None,
             extension_preferences: Default::default(),
             disabled_extensions: Vec::new(),

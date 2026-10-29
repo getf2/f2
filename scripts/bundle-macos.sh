@@ -137,7 +137,7 @@ cat > "$APP/Contents/Info.plist" <<PLIST
     <key>NSCalendarsFullAccessUsageDescription</key><string>$NAME shows what's on your calendar, and adds the events you make, in Quick Open.</string>
     <key>NSLocationUsageDescription</key><string>$NAME only needs this to tell which Wi-Fi network you're on, to show its password. It doesn't keep or send where you are.</string>
     <key>NSLocationWhenInUseUsageDescription</key><string>$NAME only needs this to tell which Wi-Fi network you're on, to show its password. It doesn't keep or send where you are.</string>
-    <key>NSMicrophoneUsageDescription</key><string>$NAME records your voice in a screen recording, when Settings say to.</string>
+    <key>NSMicrophoneUsageDescription</key><string>$NAME hears you when you dictate, and records your voice in a screen recording when Settings say to.</string>
     <key>NSContactsUsageDescription</key><string>$NAME finds the people you call, message and email from Quick Open.</string>
     <key>NSCalendarsWriteOnlyAccessUsageDescription</key><string>$NAME adds the events you make in Quick Open to your calendar.</string>
     $UPDATES

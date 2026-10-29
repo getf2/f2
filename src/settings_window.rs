@@ -13,6 +13,7 @@ use gpui_kit::component::input::{Input, InputEvent, InputState, Textarea, Textar
 use crate::settings::{CrashReports, QuickScreen, Quicklink, Settings, Snippet};
 use crate::style::{Palette, SEMIBOLD, glass, symbol};
 
+mod dictation;
 mod extensions;
 mod folder_rules;
 pub use extensions::{new_extension, open_extension};
@@ -34,7 +35,7 @@ pub fn open_quick_open(cx: &mut App) {
 }
 
 /// Settings, at a section: "snippets", "quicklinks", "windows",
-/// "search", "rules", "screenshots" (else General).
+/// "search", "rules", "screenshots", "dictation" (else General).
 pub fn open_at(section: &str, cx: &mut App) {
     let tab = match section {
         "snippets" => Tab::Snippets,
@@ -45,6 +46,7 @@ pub fn open_at(section: &str, cx: &mut App) {
         "search" => Tab::Search,
         "rules" => Tab::Rules,
         "screenshots" => Tab::Screenshots,
+        "dictation" => Tab::Dictation,
         _ => Tab::General,
     };
     open_on(Some(tab), cx);
@@ -112,6 +114,7 @@ enum Tab {
     Quicklinks,
     Snippets,
     Clipboard,
+    Dictation,
     Windows,
     Screenshots,
     Rules,
@@ -292,6 +295,7 @@ impl Tab {
             Tab::Quicklinks => ("Quicklinks", "link", crate::commands::QUICKLINKS),
             Tab::Snippets => ("Snippets", "text.quote", crate::commands::SNIPPETS),
             Tab::Clipboard => ("Clipboard", "doc.on.clipboard", crate::commands::CLIPBOARD),
+            Tab::Dictation => ("Dictation", "mic.fill", crate::dictation::COLOR),
             Tab::Windows => ("Windows", "macwindow.on.rectangle", crate::commands::WINDOWS),
             Tab::Screenshots => ("Screenshots", "camera.viewfinder", crate::commands::SCREENSHOTS),
             Tab::Rules => ("Folder Rules", "wand.and.stars", folder_rules::COLOR),
@@ -303,13 +307,14 @@ impl Tab {
         }
     }
 
-    const ALL: [Tab; 14] = [
+    const ALL: [Tab; 15] = [
         Tab::General,
         Tab::QuickOpen,
         Tab::Keyboard,
         Tab::Quicklinks,
         Tab::Snippets,
         Tab::Clipboard,
+        Tab::Dictation,
         Tab::Windows,
         Tab::Screenshots,
         Tab::Rules,
@@ -724,6 +729,8 @@ impl SettingsWindow {
     /// and F2's own keys, are let go meanwhile: pressed, one would be done
     /// (⌘W closing this), not recorded.
     fn set_recording(&mut self, what: Option<Recording>, window: &mut Window, cx: &mut Context<Self>) {
+        // (Dictation's shortcut is recorded on its own: one or the other.)
+        crate::dictation::record(false, cx);
         let on = what.is_some();
         self.recording = what;
         crate::hotkeys::suspend(on);
@@ -1778,6 +1785,7 @@ impl Render for SettingsWindow {
             Tab::Extensions => self.render_extensions(&settings, window, cx),
             Tab::Keyboard => self.render_keyboard(&settings, window, cx),
             Tab::Clipboard => self.render_clipboard(&settings, window, cx),
+            Tab::Dictation => self.render_dictation(&settings, window, cx),
             Tab::Quicklinks => self.render_quicklinks(&settings, window, cx),
             Tab::Permissions => div()
                 .child(div().mt_1().mb_3().text_size(px(12.)).text_color(palette.secondary).child(
@@ -1889,7 +1897,8 @@ impl Render for SettingsWindow {
                     .border_r_1()
                     .border_color(palette.sidebar_border)
                     // (Extensions only once they're on.)
-                    .children(Tab::ALL.into_iter().filter(|t| *t != Tab::Extensions || settings.extensions_on()).map(|t| {
+                    // (Dictation only where it works: macOS 26.)
+                    .children(Tab::ALL.into_iter().filter(|t| (*t != Tab::Extensions || settings.extensions_on()) && (*t != Tab::Dictation || crate::dictation::available())).map(|t| {
                         let (label, name, color) = t.about();
                         div()
                             .id(("section", t as usize))

@@ -31,6 +31,7 @@ fn main() {
         "src/macos/updates.m",
         "src/macos/windows.m",
         "src/macos/system.m",
+        "src/macos/dictation.m",
     ];
     for source in sources {
         println!("cargo:rerun-if-changed={source}");
@@ -73,13 +74,16 @@ fn main() {
     swift();
 }
 
-/// src/macos/translate.swift (Translation is Swift's only), as a static
-/// library: with Swift's runtime (macOS's own: the SDK has its stubs, the
-/// toolchain what older macOS lack), and Translation linked weakly (it's
-/// macOS 15's; F2 runs on older).
+/// src/macos/translate.swift and speech.swift (Translation and
+/// SpeechAnalyzer are Swift's only), as a static library: with Swift's
+/// runtime (macOS's own: the SDK has its stubs, the toolchain what older
+/// macOS lack), and Translation linked weakly (it's macOS 15's; F2 runs on
+/// older).
 fn swift() {
-    const SOURCE: &str = "src/macos/translate.swift";
-    println!("cargo:rerun-if-changed={SOURCE}");
+    const SOURCES: [&str; 2] = ["src/macos/translate.swift", "src/macos/speech.swift"];
+    for source in SOURCES {
+        println!("cargo:rerun-if-changed={source}");
+    }
     let out = std::path::PathBuf::from(std::env::var("OUT_DIR").expect("OUT_DIR"));
     let arch = match std::env::var("CARGO_CFG_TARGET_ARCH").as_deref() {
         Ok("aarch64") => "arm64".to_string(),
@@ -88,12 +92,14 @@ fn swift() {
     };
     let target = format!("{arch}-apple-macos{}", std::env::var("MACOSX_DEPLOYMENT_TARGET").unwrap_or_else(|_| "13.0".into()));
     let status = std::process::Command::new("xcrun")
-        .args(["swiftc", "-parse-as-library", "-emit-library", "-static", "-O", "-swift-version", "5", "-module-name", "NFTranslate", "-target", &target])
-        .args(["-Xfrontend", "-disable-autolink-framework", "-Xfrontend", "Translation", SOURCE, "-o"])
+        .args(["swiftc", "-parse-as-library", "-emit-library", "-static", "-O", "-swift-version", "5", "-module-name", "NFSwift", "-target", &target])
+        .args(["-Xfrontend", "-disable-autolink-framework", "-Xfrontend", "Translation"])
+        .args(SOURCES)
+        .arg("-o")
         .arg(out.join("libnf_swift.a"))
         .status()
         .expect("swiftc");
-    assert!(status.success(), "swiftc failed on {SOURCE}");
+    assert!(status.success(), "swiftc failed on {SOURCES:?}");
     let xcrun = |args: &[&str]| String::from_utf8_lossy(&std::process::Command::new("xcrun").args(args).output().expect("xcrun").stdout).trim().to_string();
     let sdk = xcrun(&["--show-sdk-path"]);
     let swiftc = std::path::PathBuf::from(xcrun(&["--find", "swiftc"]));
@@ -103,4 +109,6 @@ fn swift() {
     println!("cargo:rustc-link-search=native={sdk}/usr/lib/swift");
     println!("cargo:rustc-link-search=native={}", toolchain.join("lib/swift/macosx").display());
     println!("cargo:rustc-link-arg=-Wl,-weak_framework,Translation");
+    // (Speech is older than F2's macOS; SpeechAnalyzer, in it, is 26's.)
+    println!("cargo:rustc-link-lib=framework=Speech");
 }

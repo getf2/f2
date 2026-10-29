@@ -22,6 +22,7 @@ mod currency;
 mod dates;
 mod dev;
 mod devices;
+mod dictation;
 mod dictionary;
 mod ds_store;
 mod browser;
@@ -243,6 +244,7 @@ fn main() {
         clips::init(cx);
         windows::init(cx);
         snippets::init(cx);
+        dictation::init(cx);
         // Servers over SSH: ssh asks for passwords in F2's dialog (F2 run
         // again, see the top of `main`), and files opened from a server go
         // back when they're saved.

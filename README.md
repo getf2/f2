@@ -40,6 +40,9 @@ sub-millisecond whole-disk index feel faster than Finder + Spotlight?
   it, a color, or a long page whole, with an editor to mark them up.
 - **Window management** from the keyboard: halves, thirds, maximize,
   center, other displays.
+- **Dictation** (macOS 26): hold a key in any app, speak, and what you
+  said is typed there, by Apple's speech recognition on the Mac. After
+  [Hex](https://github.com/anomalyco/hex)'s, by Kit Langton.
 - **Extensions** for the services you use, from the Extension Store, or
   your own in JavaScript ([EXTENSIONS.md](EXTENSIONS.md)).
 

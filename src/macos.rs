@@ -1582,6 +1582,167 @@ unsafe extern "C" {
     fn nf_keychain_set(service: *const c_char, account: *const c_char, secret: *const c_char) -> bool;
     fn nf_keychain_get(service: *const c_char, account: *const c_char) -> *mut c_char;
     fn nf_keychain_delete(service: *const c_char, account: *const c_char);
+    // (dictation.m's.)
+    fn nf_dictation_listen(heard: Option<extern "C" fn(i32, u16, u64, bool) -> bool>) -> bool;
+    fn nf_key_is_down(code: u16) -> bool;
+    fn nf_mic_access() -> i32;
+    fn nf_mic_request();
+    fn nf_mic_start(wanted: *const c_char);
+    fn nf_mic_inputs() -> *mut c_char;
+    fn nf_mic_chosen(wanted: *const c_char) -> *mut c_char;
+    fn nf_mic_stop(heard: Option<extern "C" fn(*const f32, usize)>);
+    fn nf_mic_error() -> *mut c_char;
+    fn nf_dictation_hud(mode: i32);
+    // (speech.swift's.)
+    fn nf_speech_available() -> bool;
+    fn nf_speech_locales() -> *mut c_char;
+    fn nf_speech_resolve(id: *const c_char) -> *mut c_char;
+    fn nf_speech_prepare(id: *const c_char) -> *mut c_char;
+    fn nf_speech_progress() -> f64;
+    fn nf_speech_warm(id: *const c_char);
+    fn nf_speech_transcribe(id: *const c_char, samples: *const f32, count: usize, error: *mut *mut c_char) -> *mut c_char;
+}
+
+/// Hear every key in any app (with Accessibility): `heard` gets each, on
+/// a thread of its own (what it is, 0: a modifier changed, 1: down, 2: up;
+/// its code; the modifiers; whether it's repeating), true keeping it from
+/// the app. None: stop. False if it can't. On the main thread.
+pub fn dictation_listen(heard: Option<extern "C" fn(i32, u16, u64, bool) -> bool>) -> bool {
+    unsafe { nf_dictation_listen(heard) }
+}
+
+/// Whether a key's down now (by its virtual key code).
+pub fn key_is_down(code: u16) -> bool {
+    unsafe { nf_key_is_down(code) }
+}
+
+/// The microphone's allowed (None: not asked yet).
+pub fn mic_access() -> Option<bool> {
+    match unsafe { nf_mic_access() } {
+        -1 => None,
+        n => Some(n == 1),
+    }
+}
+
+/// Ask for the microphone (macOS asks, once).
+pub fn mic_request() {
+    unsafe { nf_mic_request() }
+}
+
+/// Start hearing the microphone `wanted` (a microphone's UID, "system":
+/// Sound settings', "": by itself; see `mic_chosen`). See `mic_error`.
+pub fn mic_start(wanted: &str) {
+    let wanted = CString::new(wanted).unwrap_or_default();
+    unsafe { nf_mic_start(wanted.as_ptr()) }
+}
+
+/// A microphone: its UID (it keeps it), name, kind ("builtin",
+/// "bluetooth", "iphone", "usb", "other"), and whether it's Sound
+/// settings' input.
+#[derive(Clone, PartialEq, Debug)]
+pub struct Input {
+    pub uid: String,
+    pub name: String,
+    pub kind: String,
+    pub default: bool,
+}
+
+pub fn mic_inputs() -> Vec<Input> {
+    take(unsafe { nf_mic_inputs() })
+        .unwrap_or_default()
+        .lines()
+        .filter_map(|line| {
+            let mut parts = line.split('\t');
+            Some(Input { uid: parts.next()?.into(), name: parts.next()?.into(), kind: parts.next()?.into(), default: parts.next()? == "1" })
+        })
+        .collect()
+}
+
+/// The UID of the microphone `wanted` comes to now: Sound settings' input,
+/// unless that's Bluetooth headphones (they'd switch to call quality), then
+/// the Mac's own (unless its lid's closed) or another.
+pub fn mic_chosen(wanted: &str) -> Option<String> {
+    let wanted = CString::new(wanted).ok()?;
+    take(unsafe { nf_mic_chosen(wanted.as_ptr()) })
+}
+
+/// Stop hearing it (after what was asked before): `heard` gets what it
+/// heard, 16 kHz mono, on a queue of its own (None: it's thrown away).
+/// Returns at once.
+pub fn mic_stop(heard: Option<extern "C" fn(*const f32, usize)>) {
+    unsafe { nf_mic_stop(heard) }
+}
+
+/// Why the microphone didn't start, if it didn't.
+pub fn mic_error() -> Option<String> {
+    take(unsafe { nf_mic_error() })
+}
+
+/// Dictation's pill, at the bottom of the screen.
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub enum Hud {
+    Hidden = 0,
+    Listening = 1,
+    HandsFree = 2,
+    Working = 3,
+}
+
+pub fn dictation_hud(hud: Hud) {
+    unsafe { nf_dictation_hud(hud as i32) }
+}
+
+/// Whether Apple's speech recognition runs here (macOS 26).
+pub fn speech_available() -> bool {
+    unsafe { nf_speech_available() }
+}
+
+/// The languages it takes: code, name, and whether its model's here.
+/// Waits: not on the main thread.
+pub fn speech_locales() -> Vec<(String, String, bool)> {
+    take(unsafe { nf_speech_locales() })
+        .unwrap_or_default()
+        .lines()
+        .filter_map(|line| {
+            let mut parts = line.split('\t');
+            Some((parts.next()?.to_string(), parts.next()?.to_string(), parts.next() == Some("1")))
+        })
+        .collect()
+}
+
+/// The language it'd use for `id` ("": this Mac's). Waits.
+pub fn speech_resolve(id: &str) -> Option<String> {
+    let id = CString::new(id).ok()?;
+    take(unsafe { nf_speech_resolve(id.as_ptr()) })
+}
+
+/// Ready for `id`: its model downloaded. Waits.
+pub fn speech_prepare(id: &str) -> Result<(), String> {
+    let id = CString::new(id).map_err(|e| e.to_string())?;
+    match take(unsafe { nf_speech_prepare(id.as_ptr()) }) {
+        None => Ok(()),
+        Some(why) => Err(why),
+    }
+}
+
+/// How far a model's download has got (0 to 1), if one's going.
+pub fn speech_progress() -> Option<f64> {
+    Some(unsafe { nf_speech_progress() }).filter(|p| *p >= 0.)
+}
+
+pub fn speech_warm(id: &str) {
+    if let Ok(id) = CString::new(id) {
+        unsafe { nf_speech_warm(id.as_ptr()) }
+    }
+}
+
+/// What's said in `audio` (16 kHz mono), in `id`. Waits.
+pub fn speech_transcribe(id: &str, audio: &[f32]) -> Result<String, String> {
+    let id = CString::new(id).map_err(|e| e.to_string())?;
+    let mut error = std::ptr::null_mut();
+    match take(unsafe { nf_speech_transcribe(id.as_ptr(), audio.as_ptr(), audio.len(), &mut error) }) {
+        Some(text) => Ok(text),
+        None => Err(take(error).unwrap_or_else(|| "It didn't say why.".into())),
+    }
 }
 
 /// A time zone's offset from UTC at `at` (seconds since 1970), in seconds:

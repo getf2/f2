@@ -14,7 +14,7 @@ export function Closing() {
           <h2>Give Finder the afternoon off.</h2>
           <p className="sub">Download F2, press ⌘Space, and type the name of anything on your Mac.</p>
           <div className="ctas">
-            <DownloadButton />
+            <DownloadButton place="closing" />
           </div>
           <p className="fine mono">
             <a href="/changelog">Version {VERSION}</a> · {FINE_PRINT}

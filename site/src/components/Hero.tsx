@@ -33,7 +33,7 @@ export function Hero() {
             Screenshots, clipboard history and quick answers come with it.
           </p>
           <div className="ctas">
-            <DownloadButton />
+            <DownloadButton place="hero" />
             <span className="ghost">
               then press <kbd>⌘</kbd>
               <kbd>Space</kbd>

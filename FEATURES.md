@@ -302,11 +302,18 @@ more detail.
 - **Hold a key, speak, let go** (Settings › Dictation; macOS 26): what you said is typed where you're typing, in any app. Apple's own speech recognition does it, on the Mac: nothing is sent anywhere and no recording is kept.
 - The shortcut is one key held alone (Right ⌥, Right ⌘, Fn, a function key) or two together (⌃⌥, ⌥Space): pick one, or hold the keys you'd like. Holding it with another key (⌥E for é) is the app's, not dictation.
 - **Hands-free**: press the shortcut twice to keep listening, then once more to finish. Or set it to **Press to start, again to stop** instead of holding. Escape stops, pasting nothing.
-- A pill at the bottom of the screen moves with your voice while it listens.
+- A pill at the bottom of the screen moves with your voice while it listens (beside the notch instead, with the notch on).
 - **Microphone**: Automatic (Sound settings' input, but not Bluetooth headphones': AirPods would switch to call quality, so the Mac's own stands in, unless its lid's closed), Same as Sound Settings, or one you pick.
 - In 30 languages and dialects (English, French, German, Spanish, Italian, Portuguese, Chinese, Cantonese, Japanese, Korean), this Mac's own unless you pick one; macOS downloads each language's model the first time.
 - **Paste Last Dictation**, in Quick Open, pastes the last one again.
 - After [Hex](https://github.com/anomalyco/hex)'s dictation, by Kit Langton.
+
+## The notch
+- **What's going on, in the notch**, like Alcove (Settings › Notch, off at first): the black of the notch grows out to the sides to show a timer counting down, the stopwatch, a screen recording, dictation listening, or what Music or Spotify is playing (its artwork, once F2 may ask the app, and bars that move while it plays).
+- **Notes come down from it** instead of the corner: a timer done, text copied, a permission missing. Click one to open what it links to.
+- **Point at the notch** to open it: what's playing, with play, pause and skip; everything going on, each with a button to stop it; and the last three notes (point at one for an × to dismiss it; the same note twice shows once).
+- **Screens without a notch** get one, hanging from the middle of the menu bar, only while there's something to show. Or turn that off, and notes there go to the corner as before.
+- Drawn by Core Animation in a window that's clear around it (clicks go through), the notch's size while nothing's going on: nothing runs while it's still.
 
 ## Disk space
 - **Disk Usage**, like DaisyDisk:

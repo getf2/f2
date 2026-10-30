@@ -94,6 +94,7 @@ pub fn refresh(cx: &mut App) {
     if changed {
         macos::status_extra(&items);
     }
+    crate::notch::refresh(cx);
     if (!timers.is_empty() || awake.is_some() || recording.is_some() || stopwatch.is_some()) && !TICKING.swap(true, Ordering::SeqCst) {
         cx.spawn(async move |cx| {
             loop {
@@ -160,6 +161,7 @@ fn refresh_title_only(cx: &mut App) -> bool {
         refresh(cx);
     } else {
         macos::status_title(&title(&timers, awake.is_some(), recording, stopwatch, crate::timers::now()));
+        crate::notch::refresh(cx);
     }
     !timers.is_empty() || awake.is_some() || recording.is_some() || stopwatch.is_some()
 }

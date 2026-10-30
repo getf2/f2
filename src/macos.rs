@@ -1639,6 +1639,11 @@ unsafe extern "C" {
     fn nf_mic_stop(heard: Option<extern "C" fn(*const f32, usize)>);
     fn nf_mic_error() -> *mut c_char;
     fn nf_dictation_hud(mode: i32);
+    // (notch.m's.)
+    fn nf_notch_setup(on: bool, bare: bool, chose: extern "C" fn(i32, i64));
+    fn nf_notch_live(json: *const c_char);
+    fn nf_notch_note(title: *const c_char, detail: *const c_char, color: i64, symbol: *const c_char, tile: u32, link: *const c_char) -> bool;
+    fn nf_notch_music(heard: Option<extern "C" fn(*const c_char)>);
     // (speech.swift's.)
     fn nf_speech_available() -> bool;
     fn nf_speech_locales() -> *mut c_char;
@@ -1735,6 +1740,44 @@ pub enum Hud {
 
 pub fn dictation_hud(hud: Hud) {
     unsafe { nf_dictation_hud(hud as i32) }
+}
+
+/// The notch (notch.m): on or off; on screens without one too (`bare`);
+/// and what's chosen in it (see `notch::chose`). On the main thread, as
+/// the rest of these.
+pub fn notch_setup(on: bool, bare: bool, chose: extern "C" fn(i32, i64)) {
+    unsafe { nf_notch_setup(on, bare, chose) }
+}
+
+/// What's going on, for the notch: JSON, as notch.m's `nf_notch_live`
+/// says.
+pub fn notch_live(json: &str) {
+    let json = CString::new(json).unwrap_or_default();
+    unsafe { nf_notch_live(json.as_ptr()) }
+}
+
+/// A note, down from the notch on the screen with the pointer, with its
+/// color, else a symbol on a tile (that color): false if that screen can't
+/// show it.
+pub fn notch_note(title: &str, detail: &str, color: Option<u32>, (symbol, tile): (&str, u32), link: Option<&str>) -> bool {
+    let (title, detail, symbol) = (CString::new(title).unwrap_or_default(), CString::new(detail).unwrap_or_default(), CString::new(symbol).unwrap_or_default());
+    let link = link.and_then(|l| CString::new(l).ok());
+    unsafe {
+        nf_notch_note(
+            title.as_ptr(),
+            detail.as_ptr(),
+            color.map_or(-1, i64::from),
+            symbol.as_ptr(),
+            tile,
+            link.as_ref().map_or(std::ptr::null(), |l| l.as_ptr()),
+        )
+    }
+}
+
+/// What Music and Spotify say is playing, as it changes (JSON: player,
+/// state, title, artist, album). None: no more.
+pub fn notch_music(heard: Option<extern "C" fn(*const c_char)>) {
+    unsafe { nf_notch_music(heard) }
 }
 
 /// Whether Apple's speech recognition runs here (macOS 26).

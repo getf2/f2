@@ -16,6 +16,7 @@ use crate::style::{Palette, SEMIBOLD, glass, symbol};
 mod dictation;
 mod extensions;
 mod folder_rules;
+mod notch;
 pub use extensions::{new_extension, open_extension};
 pub use folder_rules::open_for as open_rules_for;
 
@@ -35,7 +36,8 @@ pub fn open_quick_open(cx: &mut App) {
 }
 
 /// Settings, at a section: "snippets", "quicklinks", "windows",
-/// "search", "rules", "screenshots", "dictation" (else General).
+/// "search", "rules", "screenshots", "dictation", "notch" (else
+/// General).
 pub fn open_at(section: &str, cx: &mut App) {
     let tab = match section {
         "snippets" => Tab::Snippets,
@@ -47,6 +49,7 @@ pub fn open_at(section: &str, cx: &mut App) {
         "rules" => Tab::Rules,
         "screenshots" => Tab::Screenshots,
         "dictation" => Tab::Dictation,
+        "notch" => Tab::Notch,
         _ => Tab::General,
     };
     open_on(Some(tab), cx);
@@ -115,6 +118,7 @@ enum Tab {
     Snippets,
     Clipboard,
     Dictation,
+    Notch,
     Windows,
     Screenshots,
     Rules,
@@ -298,6 +302,7 @@ impl Tab {
             Tab::Snippets => ("Snippets", "text.quote", crate::commands::SNIPPETS),
             Tab::Clipboard => ("Clipboard", "doc.on.clipboard", crate::commands::CLIPBOARD),
             Tab::Dictation => ("Dictation", "mic.fill", crate::dictation::COLOR),
+            Tab::Notch => ("Notch", "macbook", 0x1d1d1f),
             Tab::Windows => ("Windows", "macwindow.on.rectangle", crate::commands::WINDOWS),
             Tab::Screenshots => ("Screenshots", "camera.viewfinder", crate::commands::SCREENSHOTS),
             Tab::Rules => ("Folder Rules", "wand.and.stars", folder_rules::COLOR),
@@ -309,7 +314,7 @@ impl Tab {
         }
     }
 
-    const ALL: [Tab; 15] = [
+    const ALL: [Tab; 16] = [
         Tab::General,
         Tab::QuickOpen,
         Tab::Keyboard,
@@ -317,6 +322,7 @@ impl Tab {
         Tab::Snippets,
         Tab::Clipboard,
         Tab::Dictation,
+        Tab::Notch,
         Tab::Windows,
         Tab::Screenshots,
         Tab::Rules,
@@ -1871,6 +1877,7 @@ impl Render for SettingsWindow {
             Tab::Keyboard => self.render_keyboard(&settings, window, cx),
             Tab::Clipboard => self.render_clipboard(&settings, window, cx),
             Tab::Dictation => self.render_dictation(&settings, window, cx),
+            Tab::Notch => self.render_notch(&settings, window),
             Tab::Quicklinks => self.render_quicklinks(&settings, window, cx),
             Tab::Permissions => div()
                 .child(div().mt_1().mb_3().text_size(px(12.)).text_color(palette.secondary).child(

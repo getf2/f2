@@ -32,6 +32,7 @@ fn main() {
         "src/macos/windows.m",
         "src/macos/system.m",
         "src/macos/dictation.m",
+        "src/macos/notch.m",
     ];
     for source in sources {
         println!("cargo:rerun-if-changed={source}");

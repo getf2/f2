@@ -44,6 +44,8 @@ sub-millisecond whole-disk index feel faster than Finder + Spotlight?
 - **Dictation** (macOS 26): hold a key in any app, speak, and what you
   said is typed there, by Apple's speech recognition on the Mac. After
   [Hex](https://github.com/anomalyco/hex)'s, by Kit Langton.
+- **The notch**, as Alcove has it: a timer, a recording, dictation or
+  the song playing beside it, F2's notes coming down from it.
 - **Extensions** for the services you use, from the Extension Store, or
   your own in JavaScript ([EXTENSIONS.md](EXTENSIONS.md)).
 

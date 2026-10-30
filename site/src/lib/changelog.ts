@@ -20,6 +20,7 @@ export type Release = {
 export const RELEASES: Release[] = [
   {
     version: '0.2.2',
+    date: '2026-10-30',
     title: 'The notch, put to work',
     summary: 'The notch shows what’s going on, and F2’s notes come down from it. Disk images open without Finder, and Quick Open goes where you put it.',
     art: { paint: 'night-aurora', y: '50%', queries: ['now playing', 'f budget', 'timer 5 min'] },

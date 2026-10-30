@@ -5,17 +5,25 @@
 //! them (the selection together); Clean Up puts each in the grid's nearest
 //! free place, Clean Up By lines them up by name, kind, date or size. The
 //! arrow keys go to the nearest icon that way.
+//!
+//! A folder made to be seen a certain way (a disk image's: its app beside
+//! an arrow to Applications) has a picture or color behind its icons, set
+//! in Finder's View Options: drawn behind them, with the icons at the size
+//! it says, unless F2 keeps a view of its own for the folder.
 
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
+use gpui::prelude::FluentBuilder as _;
 use gpui::*;
 
 use super::dnd::Dragged;
 use super::items::{GRID_PADDING, cell_height, cell_width};
 use super::{Finder, View};
+use crate::ds_store::{Background, Store};
 use crate::listing::{Entry, SortKey};
+use crate::settings::{GroupBy, Settings};
 
 /// Past this many, a folder's icons go in the grid (all of them laid out
 /// at once would be slow).
@@ -55,14 +63,45 @@ fn save(dir: &Path, moved: &[(String, (f32, f32))]) {
     }
 }
 
-/// Where a folder's icons are: Finder's, then F2's over them; and whether
-/// Finder arranges it freely (with icons it's placed).
-pub(super) fn load(dir: &Path) -> (HashMap<String, (f32, f32)>, bool) {
-    let finder = crate::ds_store::read(dir).unwrap_or_default();
+/// Where a folder's icons are: Finder's, then F2's over them; whether
+/// Finder arranges it freely (with icons it's placed); and the rest its
+/// .DS_Store says.
+pub(super) fn load(dir: &Path) -> (HashMap<String, (f32, f32)>, bool, Store) {
+    let mut finder = crate::ds_store::read(dir).unwrap_or_default();
     let free = finder.free && !finder.positions.is_empty();
-    let mut positions = finder.positions;
+    let mut positions = std::mem::take(&mut finder.positions);
     positions.extend(with_saved(|saved| saved.get(dir).cloned().unwrap_or_default()));
-    (positions, free)
+    (positions, free, finder)
+}
+
+/// What's behind a folder's icons, as Finder's View Options set it.
+pub(super) struct Backdrop {
+    color: Option<Hsla>,
+    /// The picture, once it's read, and how big it's shown, in points.
+    picture: Option<(Arc<RenderImage>, (f32, f32))>,
+    /// The labels' color over it: dark over a light one, light over a dark
+    /// one, whichever the Mac's appearance is.
+    label: Option<Hsla>,
+}
+
+/// Labels' color over something this light (0 to 1).
+fn label_over(lightness: f32) -> Hsla {
+    if lightness > 0.55 { rgb(0x1d1d1f).into() } else { rgb(0xf5f5f7).into() }
+}
+
+/// How light a picture is, on average (its see-through parts not
+/// counted); None if it's mostly see-through. Its pixels are BGRA.
+fn lightness(image: &RenderImage) -> Option<f32> {
+    let bytes = image.as_bytes(0)?;
+    let (mut sum, mut weight) = (0f64, 0f64);
+    // (Every 7th pixel's plenty.)
+    for px in bytes.chunks_exact(4).step_by(7) {
+        let a = px[3] as f64 / 255.;
+        sum += a * (0.0722 * px[0] as f64 + 0.7152 * px[1] as f64 + 0.2126 * px[2] as f64) / 255.;
+        weight += a;
+    }
+    let pixels = (bytes.len() / 4).div_ceil(7) as f64;
+    (weight > pixels * 0.5).then(|| (sum / weight) as f32)
 }
 
 fn name(entry: &Entry) -> String {
@@ -75,6 +114,73 @@ fn slot_of(x: f32, y: f32, w: f32, h: f32) -> (i32, i32) {
 }
 
 impl Finder {
+    /// Where the folder's icons go and what's behind them (see `load`).
+    /// A folder made to be seen a certain way, with no view of F2's kept
+    /// for it (or in a window laid out for it), is shown that way: in
+    /// icon view, at its icons' and labels' sizes. Its picture is read off
+    /// the main thread.
+    pub(super) fn read_layout(&mut self, cx: &mut Context<Self>) {
+        if let Some((old, _)) = self.backdrop.take().and_then(|b| b.picture) {
+            cx.drop_image(old, None);
+        }
+        if self.virtual_folder.is_some() {
+            (self.placed, self.free) = (HashMap::new(), false);
+            return;
+        }
+        let dir = self.cwd.clone();
+        let (placed, finder_free, store) = load(&dir);
+        // (A view of F2's kept for the folder, and whether it's free there.)
+        let kept = Settings::get(cx).folder_views.get(&dir).map(|v| v.free);
+        self.placed = placed;
+        self.free = kept.flatten().unwrap_or(finder_free);
+        let (color, label) = match store.look.background {
+            Background::Color([r, g, b]) => (Some(Hsla::from(Rgba { r, g, b, a: 1. })), Some(label_over(0.2126 * r + 0.7152 * g + 0.0722 * b))),
+            _ => (None, None),
+        };
+        let picture = store.picture(&dir);
+        if color.is_none() && picture.is_none() && !self.laid_out {
+            return;
+        }
+        if kept.is_none() || self.laid_out {
+            self.view = View::Icons;
+            self.group = GroupBy::None;
+            self.free = finder_free;
+            if let Some(size) = store.look.icon_size {
+                self.icon_size = size.clamp(16., 512.);
+            }
+            if let Some(size) = store.look.text_size {
+                self.text_size = size.clamp(10., 16.);
+            }
+        }
+        self.backdrop = Some(Backdrop { color, picture: None, label });
+        let Some(file) = picture else { return };
+        cx.spawn(async move |this, cx| {
+            // (At 2x: a 1x screen's drawn from it smaller.)
+            let read = cx
+                .background_executor()
+                .spawn(async move {
+                    let (image, size) = crate::macos::picture_bitmap(&file, 2.)?;
+                    let light = lightness(&image);
+                    Some((image, size, light))
+                })
+                .await;
+            this.update(cx, |this, cx| {
+                if let (Some((image, size, light)), Some(backdrop)) = (read, this.backdrop.as_mut().filter(|_| this.cwd == dir)) {
+                    backdrop.picture = Some((Arc::new(image), size));
+                    backdrop.label = light.map(label_over).or(backdrop.label);
+                    cx.notify();
+                }
+            })
+            .ok();
+        })
+        .detach();
+    }
+
+    /// Icons' labels' color, over what's behind them (else the theme's).
+    pub(super) fn label_color(&self) -> Option<Hsla> {
+        self.backdrop.as_ref().filter(|_| self.free_layout_on()).and_then(|b| b.label)
+    }
+
     /// Whether icon view shows this folder's icons where they've been put.
     pub(super) fn free_layout_on(&self) -> bool {
         self.free && self.view == View::Icons && self.lines.is_empty() && !self.flat() && self.rows.len() <= MOST
@@ -121,12 +227,19 @@ impl Finder {
             .enumerate()
             .map(|(ix, (x, y))| div().absolute().left(px(*x)).top(px(*y)).child(self.render_cell(ix, window, cx)).into_any_element())
             .collect();
+        // (Its picture, at its own size from the top left, as Finder draws
+        // it; the space it takes at least.)
+        let color = self.backdrop.as_ref().and_then(|b| b.color);
+        let picture = self.backdrop.as_ref().and_then(|b| b.picture.clone());
+        let (width, height) = picture.as_ref().map_or((width, height), |(_, (w, h))| (width.max(*w), height.max(*h)));
         let canvas = div()
             .relative()
             .w(px(width))
             .h(px(height))
             .min_w_full()
             .min_h_full()
+            .when_some(color, |d, color| d.bg(color))
+            .children(picture.map(|(image, (w, h))| img(image).absolute().left_0().top_0().w(px(w)).h(px(h)).into_any_element()))
             .children(cells)
             .on_drag_move::<Dragged>(cx.listener(|this, e: &DragMoveEvent<Dragged>, _, _| {
                 this.drag_at = Some((e.event.position, e.bounds.origin));

@@ -315,6 +315,20 @@ saying it's a copy, and Extract. Right-click > Extract unpacks beside it as
 Archive Utility does (one item as itself, several in a folder named after
 the archive); with two panes, Extract to Other Pane. Compress makes a zip.
 
+**Disk images** (.dmg, .iso, .sparseimage, .sparsebundle…) open in F2,
+attached with `hdiutil`, so they open with Finder quit too (macOS's
+DiskImageMounter leaves an image's window to Finder). A locked one's
+password is asked in F2's dialog; a downloaded one is checked through
+first; one with a license to agree to goes to DiskImageMounter, which
+shows it. The volume shows as its maker laid it out for Finder (its
+.DS_Store): a window its size with no toolbar or sidebar, their picture
+or color behind, each icon where they put it, the labels dark or light
+to read over it. Any folder given a picture or color in Finder's View
+Options shows it too. With an app alone in the image, a bar offers
+Install (a copy in Applications), then Open, Eject, or Eject and Move to
+Trash. Settings > General can make F2 what opens .dmg files from other
+apps (macOS asks you to confirm), and back.
+
 **Dual pane** (View > Show or Hide Dual Pane, ⌥⌘S): a window shows two
 folders side by side, as Total Commander and ForkLift do, the sidebar on
 the left. Tab goes from one to the other (the one with the keyboard shows

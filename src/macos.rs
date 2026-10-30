@@ -75,7 +75,11 @@ unsafe extern "C" {
     fn nf_folder_icon_tinted(path: *const c_char, px: u32, rgb: u32) -> *mut u8;
     fn nf_tag_tinting() -> bool;
     fn nf_emoji_palette();
-    fn nf_plist_string(data: *const u8, len: usize, key: *const c_char) -> *mut c_char;
+    fn nf_plist_json(data: *const u8, len: usize) -> *mut c_char;
+    fn nf_disk_images_ours() -> bool;
+    fn nf_set_disk_images_ours(ours: bool) -> *mut c_char;
+    fn nf_titlebar_height() -> f64;
+    fn nf_yield_to(pid: i32);
     fn nf_clean_keyboard(seconds: i32) -> bool;
     fn nf_lock_screen() -> bool;
     fn nf_panel_setup(view: *mut std::ffi::c_void, radius: f64);
@@ -688,10 +692,32 @@ pub fn folder_icon_tinted(path: &Path, px: u32, rgb: u32) -> Option<RenderImage>
     into_image(unsafe { nf_folder_icon_tinted(path.as_ptr(), px, rgb) }, px, px)
 }
 
-/// A property list's string under `key` (it a dictionary).
-pub fn plist_string(data: &[u8], key: &str) -> Option<String> {
-    let key = CString::new(key).ok()?;
-    take(unsafe { nf_plist_string(data.as_ptr(), data.len(), key.as_ptr()) })
+/// A property list (binary or XML) as JSON: its data as hex strings, its
+/// dates as seconds since 1970.
+pub fn plist_json(data: &[u8]) -> Option<serde_json::Value> {
+    serde_json::from_str(&take(unsafe { nf_plist_json(data.as_ptr(), data.len()) })?).ok()
+}
+
+/// Whether disk images open in F2 (else in macOS's DiskImageMounter).
+pub fn disk_images_ours() -> bool {
+    unsafe { nf_disk_images_ours() }
+}
+
+/// Open .dmg files in F2, or in DiskImageMounter again. macOS asks you
+/// first, and this waits for your answer: not on the main thread.
+pub fn set_disk_images_ours(ours: bool) -> Result<(), String> {
+    outcome(unsafe { nf_set_disk_images_ours(ours) })
+}
+
+/// Let the process `pid` (F2's own dialog, a process of its own) come
+/// forward, as the app in front has to since macOS 14.
+pub fn yield_to(pid: u32) {
+    unsafe { nf_yield_to(pid as i32) }
+}
+
+/// How tall a window's title bar is, with no toolbar.
+pub fn titlebar_height() -> f32 {
+    unsafe { nf_titlebar_height() as f32 }
 }
 
 /// macOS's Emoji & Symbols viewer (it types into what has the keyboard).
@@ -924,6 +950,15 @@ pub fn quicklook_warm() {
 /// An image file as ImageIO reads it (HEIC, camera raw…), turned as its
 /// EXIF says, `max` pixels on its longer side at most. Off the main thread
 /// is fine.
+/// A folder's background picture, drawn for a screen of `scale`, and how
+/// big it's shown, in points. Off the main thread is fine.
+pub fn picture_bitmap(path: &Path, scale: f32) -> Option<(RenderImage, (f32, f32))> {
+    let path = c_path(path)?;
+    let (mut pw, mut ph, mut w, mut h) = (0., 0., 0, 0);
+    let data = unsafe { nf_picture_bitmap(path.as_ptr(), scale as f64, &mut pw, &mut ph, &mut w, &mut h) };
+    Some((into_image(data, w, h)?, (pw as f32, ph as f32)))
+}
+
 pub fn image_bitmap(path: &Path, max: u32) -> Option<RenderImage> {
     let path = c_path(path)?;
     let (mut w, mut h) = (0, 0);
@@ -1552,6 +1587,7 @@ unsafe extern "C" {
     fn nf_video_thumbnail(path: *const c_char, out: *const c_char, max: i32) -> bool;
     fn nf_read_rgba(path: *const c_char, w: *mut usize, h: *mut usize) -> *mut u8;
     fn nf_image_bitmap(path: *const c_char, max: i32, w: *mut u32, h: *mut u32) -> *mut u8;
+    fn nf_picture_bitmap(path: *const c_char, scale: f64, pw: *mut f64, ph: *mut f64, w: *mut u32, h: *mut u32) -> *mut u8;
     fn nf_pdf_pages(
         path: *const c_char,
         first: std::ffi::c_long,

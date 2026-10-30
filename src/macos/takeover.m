@@ -2,6 +2,7 @@
 // here instead.
 
 #import <AppKit/AppKit.h>
+#import <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
 
 // While Finder is the app in front: the window numbers of its ordinary
 // windows on screen (not the desktop), up to `max`, and how many there
@@ -146,5 +147,40 @@ char *nf_read_only_image_volumes(void) {
             }
         }
         return strdup([out componentsJoinedByString:@"\n"].UTF8String);
+    }
+}
+
+// Whether disk images open in this app (else in DiskImageMounter, whose
+// volumes' windows are Finder's to show).
+bool nf_disk_images_ours(void) {
+    @autoreleasepool {
+        NSString *me = NSBundle.mainBundle.bundleIdentifier;
+        NSURL *app = [NSWorkspace.sharedWorkspace URLForApplicationToOpenContentType:[UTType typeWithIdentifier:@"com.apple.disk-image-udif"]];
+        return me && app && [[NSBundle bundleWithURL:app].bundleIdentifier isEqualToString:me];
+    }
+}
+
+// Open .dmg files in this app, or in DiskImageMounter again. macOS asks
+// you first, a dialog for each kind changed: so only .dmg's (and .img's,
+// the same kind), the one that matters. NULL if done (or you kept it as it
+// was), else why not (malloc'd). Waits for your answer: not on the main
+// thread.
+char *nf_set_disk_images_ours(bool ours) {
+    @autoreleasepool {
+        if (ours && !NSBundle.mainBundle.bundleIdentifier) return strdup("Only an installed copy can open disk images.");
+        NSURL *app = ours ? NSBundle.mainBundle.bundleURL : [NSWorkspace.sharedWorkspace URLForApplicationWithBundleIdentifier:@"com.apple.DiskImageMounter"];
+        if (!app) return strdup("DiskImageMounter isn't there.");
+        __block NSString *failed = nil;
+        dispatch_semaphore_t done = dispatch_semaphore_create(0);
+        [NSWorkspace.sharedWorkspace setDefaultApplicationAtURL:app
+                                              toOpenContentType:[UTType typeWithIdentifier:@"com.apple.disk-image-udif"]
+                                              completionHandler:^(NSError *error) {
+                                                  // (Kept as it was, in macOS's dialog: nothing went wrong.)
+                                                  bool kept = [error.domain isEqualToString:NSCocoaErrorDomain] && error.code == NSUserCancelledError;
+                                                  if (error && !kept) failed = error.localizedDescription;
+                                                  dispatch_semaphore_signal(done);
+                                              }];
+        dispatch_semaphore_wait(done, dispatch_time(DISPATCH_TIME_NOW, 300 * NSEC_PER_SEC));
+        return failed ? strdup(failed.UTF8String) : NULL;
     }
 }

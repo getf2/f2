@@ -9,6 +9,7 @@ mod airdrop;
 mod chrome;
 mod columns;
 mod gallery;
+mod install;
 mod dnd;
 pub(crate) mod items;
 mod keys;
@@ -80,7 +81,7 @@ pub fn new_window_folder(cx: &App) -> PathBuf {
 }
 
 /// A folder's name as Finder shows it ("Macintosh HD" for /).
-fn display_name(path: &Path) -> SharedString {
+pub(crate) fn display_name(path: &Path) -> SharedString {
     // (An archive looked inside: its own name, not its cache folder's.)
     if let Some((archive, root)) = crate::archives::of(path)
         && root == path
@@ -190,6 +191,16 @@ pub struct Finder {
     /// that is, by name: their centers (see `arrange`).
     free: bool,
     placed: HashMap<String, (f32, f32)>,
+    /// What's behind the icons, as the folder's View Options say (see
+    /// `arrange::Backdrop`).
+    backdrop: Option<arrange::Backdrop>,
+    /// Shown as its maker laid it out for Finder (a disk image's window:
+    /// see `disk_images`): no toolbar, sidebar or bars, and folders opened
+    /// from it open in windows of their own.
+    laid_out: bool,
+    /// The disk image the volume shown is of, with an app to install (see
+    /// `install`).
+    image: Option<install::Image>,
     free_scroll: ScrollHandle,
     /// A drag over the freely arranged icons: where it is, and where their
     /// space starts (both in the window).
@@ -342,7 +353,6 @@ impl Finder {
         let (icons, finished) = Icons::new();
         let fv = Settings::get(cx).view_for(&start);
         let everywhere = Settings::get(cx).search_this_mac;
-        let (placed, finder_free) = arrange::load(&start);
 
         let mut this = Finder {
             browser,
@@ -369,8 +379,11 @@ impl Finder {
             search_contents: false,
             search_tips: false,
             filters: Default::default(),
-            free: fv.free.unwrap_or(finder_free),
-            placed,
+            free: false,
+            placed: HashMap::new(),
+            backdrop: None,
+            laid_out: false,
+            image: None,
             free_scroll: ScrollHandle::new(),
             drag_at: None,
             search_sort: None,
@@ -438,6 +451,8 @@ impl Finder {
         if let Some(search) = &this.search {
             search.opened(&this.cwd);
         }
+        this.read_layout(cx);
+        this.look_for_image(cx);
         this.load(select, cx);
         this.receive_icons(finished, cx);
         this.watch_disk(cx);
@@ -449,6 +464,14 @@ impl Finder {
             this.overlay = Some(sheets::Sheet::FullDiskAccess);
         }
         this
+    }
+
+    /// Shown as its maker laid it out for Finder (see `laid_out`).
+    pub fn lay_out_as_made(&mut self, cx: &mut Context<Self>) {
+        self.laid_out = true;
+        self.read_layout(cx);
+        self.look_for_image(cx);
+        cx.notify();
     }
 
     /// Its tab was switched to (or its window opened).
@@ -569,6 +592,11 @@ impl Finder {
         if path == self.cwd && !self.flat() {
             return;
         }
+        // (Laid out as made: anywhere else is in a window of its own, as a
+        // toolbarless window of Finder's opens one.)
+        if self.laid_out {
+            return crate::browser::open(path, select, cx);
+        }
         let here = self.here();
         if here != Loc::Folder(path.clone()) {
             self.back.push(here);
@@ -591,6 +619,7 @@ impl Finder {
                 self.cwd = path.clone();
                 self.col_base = path;
                 self.apply_folder_view(cx);
+                self.look_for_image(cx);
                 Settings::update(cx, |s| s.visited(&self.cwd));
                 self.load(select, cx);
             }
@@ -684,7 +713,7 @@ impl Finder {
     }
 
     /// How this folder is shown, as remembered (or the default).
-    fn apply_folder_view(&mut self, cx: &App) {
+    fn apply_folder_view(&mut self, cx: &mut Context<Self>) {
         let fv = Settings::get(cx).view_for(&self.cwd);
         // (Column view stays as you go deeper into its columns.)
         if self.view != View::Columns || fv.view != View::List {
@@ -695,12 +724,7 @@ impl Finder {
         self.icon_size = fv.icon_size;
         self.text_size = fv.text_size;
         // (Where its icons are: as Finder put them, or as moved here.)
-        (self.placed, self.free) = if self.virtual_folder.is_none() {
-            let (placed, finder_free) = arrange::load(&self.cwd);
-            (placed, fv.free.unwrap_or(finder_free))
-        } else {
-            (HashMap::new(), false)
-        };
+        self.read_layout(cx);
     }
 
     /// Remember how this folder is shown.
@@ -1780,6 +1804,9 @@ impl Render for Finder {
             crate::info::follow_selection(self.selection(), cx);
         }
         let palette = self.palette;
+        if self.laid_out {
+            return self.render_laid_out(window, cx);
+        }
         let settings = Settings::get(cx);
         // (Two panes: no room for the preview pane.)
         let (show_path_bar, show_status_bar, show_preview_pane) =
@@ -1806,6 +1833,7 @@ impl Render for Finder {
             .children((self.searching || self.filters.any() || self.query_focused(window, cx)).then(|| self.render_scope_bar(window, cx).into_any_element()))
             .children((!self.searching && self.in_trash()).then(|| self.render_trash_bar(cx).into_any_element()))
             .children((!self.searching && !self.flat()).then(|| self.render_archive_bar(cx)).flatten())
+            .children((!self.searching).then(|| self.render_install_bar(window, cx)).flatten())
             .child(
                 div()
                     .flex_1()
@@ -1833,6 +1861,45 @@ impl Render for Finder {
             .text_size(px(13.));
         // (The right pane: the left one's sidebar is the window's.)
         let sidebar = (self.side != Some(Side::Right)).then(|| self.render_sidebar(window, cx));
-        self.with_actions(root, cx).children(sidebar).child(content)
+        self.with_actions(root, cx).children(sidebar).child(content).into_any_element()
+    }
+}
+
+impl Finder {
+    /// Laid out as made (see `laid_out`): the icons over their picture, and
+    /// under them the bar to install its app; what's said, over them.
+    fn render_laid_out(&mut self, window: &mut Window, cx: &mut Context<Self>) -> AnyElement {
+        let palette = self.palette;
+        self.list_width = f32::from(window.viewport_size().width);
+        self.toolbar_width = self.list_width;
+        self.columns = (((self.list_width - 2. * items::GRID_PADDING) / items::cell_width(self.icon_size)).floor() as usize).max(1);
+        // (Over the icons: above the bar, if there's one.)
+        let above = if self.image.is_some() { crate::disk_images::INSTALL_BAR } else { 0. };
+        let notice = self.notice.clone().map(|notice| {
+            div()
+                .absolute()
+                .bottom(px(12. + above))
+                .left_0()
+                .right_0()
+                .flex()
+                .justify_center()
+                .child(div().max_w(px(420.)).px_3().py(px(6.)).rounded(px(8.)).bg(palette.sidebar).border_1().border_color(palette.separator).text_size(px(12.)).child(notice))
+        });
+        let content = div()
+            .relative()
+            .flex_1()
+            .min_w_0()
+            .h_full()
+            .flex()
+            .flex_col()
+            .child(div().flex_1().min_h_0().flex().child(self.render_files(window, cx)))
+            .children(self.render_install_bar(window, cx))
+            .children(self.render_jobs(window))
+            .children(notice)
+            .children(self.render_peek(window, cx))
+            .children(self.render_sheet(window, cx))
+            .children(self.render_conflict(window, cx));
+        let root = div().key_context(CONTEXT).track_focus(&self.focus).size_full().flex().bg(palette.background).text_color(palette.label).text_size(px(13.));
+        self.with_actions(root, cx).child(content).into_any_element()
     }
 }

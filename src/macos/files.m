@@ -347,13 +347,46 @@ char *nf_region_code(void) {
     }
 }
 
-// A property list's (binary or XML, as `data`) string under `key`, if it's
-// a dictionary with one: a .DS_Store's icon view's "arrangeBy".
-char *nf_plist_string(const uint8_t *data, size_t len, const char *key) {
+// A property list as JSON can hold it: its data as hex, its dates as
+// seconds since 1970.
+static id jsonable(id value) {
+    if ([value isKindOfClass:NSDictionary.class]) {
+        NSMutableDictionary *out = [NSMutableDictionary dictionary];
+        [(NSDictionary *)value enumerateKeysAndObjectsUsingBlock:^(id key, id v, __unused BOOL *stop) {
+            id j = jsonable(v);
+            if (j && [key isKindOfClass:NSString.class]) out[key] = j;
+        }];
+        return out;
+    }
+    if ([value isKindOfClass:NSArray.class]) {
+        NSMutableArray *out = [NSMutableArray array];
+        for (id v in (NSArray *)value) {
+            id j = jsonable(v);
+            if (j) [out addObject:j];
+        }
+        return out;
+    }
+    if ([value isKindOfClass:NSData.class]) {
+        NSData *data = value;
+        NSMutableString *hex = [NSMutableString stringWithCapacity:data.length * 2];
+        const uint8_t *bytes = data.bytes;
+        for (NSUInteger i = 0; i < data.length; i++) [hex appendFormat:@"%02x", bytes[i]];
+        return hex;
+    }
+    if ([value isKindOfClass:NSDate.class]) return @([(NSDate *)value timeIntervalSince1970]);
+    if ([value isKindOfClass:NSString.class] || [value isKindOfClass:NSNumber.class]) return value;
+    return nil;
+}
+
+// A property list (binary or XML) as JSON (see `jsonable`): a .DS_Store's
+// icon view and window settings, hdiutil's answers. NULL if it isn't one
+// (malloc'd).
+char *nf_plist_json(const uint8_t *data, size_t len) {
     @autoreleasepool {
-        NSDictionary *plist = [NSPropertyListSerialization propertyListWithData:[NSData dataWithBytes:data length:len] options:0 format:NULL error:nil];
-        if (![plist isKindOfClass:NSDictionary.class]) return NULL;
-        id value = plist[@(key)];
-        return [value isKindOfClass:NSString.class] ? strdup([value UTF8String]) : NULL;
+        id plist = [NSPropertyListSerialization propertyListWithData:[NSData dataWithBytes:data length:len] options:0 format:NULL error:nil];
+        id json = plist ? jsonable(plist) : nil;
+        if (![json isKindOfClass:NSDictionary.class] && ![json isKindOfClass:NSArray.class]) return NULL;
+        NSData *out = [NSJSONSerialization dataWithJSONObject:json options:0 error:nil];
+        return out ? strndup(out.bytes, out.length) : NULL;
     }
 }

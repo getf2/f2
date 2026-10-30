@@ -111,6 +111,12 @@ more detail.
 
 ### Standing in for Finder
 - Other apps' "Show in Finder" opens F2 instead.
+- **Disk images** (.dmg, .iso, .sparseimage…) open in F2 itself, so they still open with Finder quit (macOS's own mounter leaves their window to Finder):
+  - Shown as their makers laid them out for Finder: the window's size, no toolbar or sidebar, their picture (or color) behind, each icon where they put it, the labels dark or light to read over it.
+  - A locked one asks for its password. A downloaded one is checked through first; one with a license to agree to goes to macOS's mounter, which shows it.
+  - With an app alone in it: Install copies it to Applications, then Open, Eject, or Eject and Move to Trash.
+  - Settings › General can make F2 what opens .dmg files from other apps too (macOS asks you to confirm).
+- Any folder given a picture or color in Finder's View Options shows it behind its icons.
 - Experimental: windows Finder opens (from its Dock icon, or folders other apps open) close and open in F2 instead.
 
 ## Quick Open (the launcher)

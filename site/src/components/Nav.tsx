@@ -1,3 +1,4 @@
+import { trackDownload } from '#/lib/analytics'
 import { DOWNLOAD_URL } from '#/lib/site'
 
 // The same on every page: the home page's sections, then the other pages.
@@ -25,7 +26,7 @@ export function Nav({ current }: { current?: string }) {
           </a>
         ))}
       </div>
-      <a className="navcta" href={DOWNLOAD_URL}>
+      <a className="navcta" href={DOWNLOAD_URL} onClick={() => trackDownload('nav')}>
         Download
       </a>
     </nav>

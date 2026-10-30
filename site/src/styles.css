@@ -2321,3 +2321,121 @@ h1 {
     grid-template-columns: 1fr;
   }
 }
+
+/* The analytics notice (AnalyticsNotice.tsx): a small card in the bottom left
+   corner, over everything, until it's answered. Glass like the snapped
+   windows and "then press ⌘ Space", in the site's sky blue and tinted deeper,
+   so its white text still reads over the cream paper and white windows, with
+   the hero's buttons: solid white, and white glass. */
+.notice {
+  position: fixed;
+  left: 16px;
+  bottom: 16px;
+  z-index: 50;
+  width: min(320px, calc(100vw - 32px));
+  padding: 16px;
+  border-radius: 20px;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 14.5px;
+  line-height: 1.45;
+  text-shadow: 0 1px 8px rgba(10, 30, 90, 0.35);
+  /* A sheen across the top, as on glass. */
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0) 45%),
+    rgba(22, 62, 150, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(20px) saturate(1.6);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    0 18px 40px rgba(8, 20, 60, 0.35);
+  animation: notice-in 0.4s var(--ease-out) both;
+}
+.notice a {
+  color: #fff;
+  text-decoration: underline;
+  text-decoration-color: rgba(255, 255, 255, 0.45);
+  text-underline-offset: 3px;
+  transition: text-decoration-color 0.2s ease;
+}
+.notice a:hover {
+  text-decoration-color: #fff;
+}
+.notice-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+.notice-actions button {
+  flex: 1;
+  height: 34px;
+  border-radius: 11px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 580;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.16s var(--ease-out);
+}
+.notice-actions button:hover {
+  background: rgba(255, 255, 255, 0.24);
+}
+.notice-actions .ok {
+  color: var(--ink);
+  text-shadow: none;
+  background: #fff;
+  border-color: #fff;
+}
+.notice-actions .ok:hover {
+  background: #eaf0fc;
+}
+.notice-actions button:active {
+  transform: scale(0.97);
+}
+/* Less motion: it fades in without rising (--rise is 0). */
+@keyframes notice-in {
+  from {
+    opacity: 0;
+    translate: 0 calc(var(--rise) / 3);
+  }
+}
+/* On phones it's a slim bar along the bottom, covering as little as it can. */
+@media (max-width: 640px) {
+  .notice {
+    right: 12px;
+    bottom: 12px;
+    left: 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: auto;
+    padding: 10px 10px 10px 14px;
+    font-size: 13px;
+    line-height: 1.35;
+  }
+  .notice-actions {
+    flex: none;
+    margin-top: 0;
+  }
+  .notice-actions button {
+    flex: none;
+    padding: 0 12px;
+  }
+}
+
+/* The privacy page's "change your choice", which reopens the notice: a link. */
+.policy .what .choice {
+  border: 0;
+  padding: 0;
+  background: none;
+  font: inherit;
+  color: var(--sky);
+  cursor: pointer;
+}
+.policy .what .choice:hover {
+  text-decoration: underline;
+}
+.policy .rel {
+  scroll-margin-top: 32px;
+}

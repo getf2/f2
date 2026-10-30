@@ -1,5 +1,7 @@
 import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
 
+import { AnalyticsNotice } from '#/components/AnalyticsNotice'
+import { CHOICE_SCRIPT, TRACKER_SRC, YAAP_SITE_ID } from '#/lib/analytics'
 import { softwareApplicationJsonLd } from '#/lib/seo'
 import { SITE_URL } from '#/lib/site'
 import appCss from '../styles.css?url'
@@ -72,9 +74,26 @@ function RootDocument({ children }: { children: React.ReactNode }) {
     <html lang="en">
       <head>
         <HeadContent />
+        {/* Visits and Download clicks, counted by Yaap (src/lib/analytics.ts).
+            The inline script turns its visitor IDs off for visitors who opted
+            out, before the deferred tracker reads its tag. Production builds
+            only, so local visits aren't counted. */}
+        {import.meta.env.PROD && (
+          <>
+            <script
+              defer
+              src={TRACKER_SRC}
+              data-site-id={YAAP_SITE_ID}
+              data-identifiers="true"
+              suppressHydrationWarning
+            />
+            <script dangerouslySetInnerHTML={{ __html: CHOICE_SCRIPT }} />
+          </>
+        )}
       </head>
       <body>
         {children}
+        <AnalyticsNotice />
         <Scripts />
       </body>
     </html>

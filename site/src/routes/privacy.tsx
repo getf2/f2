@@ -3,12 +3,13 @@ import type { ReactNode } from 'react'
 
 import { Closing } from '#/components/Closing'
 import { PageHead } from '#/components/PageHead'
+import { openNotice } from '#/lib/analytics'
 import { SITE_URL } from '#/lib/site'
 import { useReveal } from '#/lib/useReveal'
 
 const TITLE = 'Privacy · F2 for Mac'
 const DESCRIPTION = 'What F2 sends from your Mac, and when: never your files, and a crash report only if you say so.'
-const UPDATED = '29 October 2026'
+const UPDATED = '30 October 2026'
 const CONTACT = 'leo@getf2.com'
 
 export const Route = createFileRoute('/privacy')({
@@ -117,8 +118,28 @@ function Privacy() {
 
         <Part title="This website">
           <p>
-            getf2.com has no cookies and no analytics. Cloudflare, which hosts it, keeps short-lived logs of the
-            requests it serves, to keep the site running and safe.
+            getf2.com has no cookies. It counts visits with Yaap: for each page you open, the page, the website that
+            linked to it (just the site, not the full address), any campaign labels in the link, your browser, system
+            and kind of device, and a rough location (country, region and city) worked out from your internet
+            address. A click on Download is counted the same way. Yaap keeps no internet addresses.
+          </p>
+          <p>
+            Yaap also keeps two random ids in your browser: one for your browser, for six months, and one for your
+            visit, which ends when you close the tab or after 30 minutes away. They show how many people visit, how
+            long they stay and which pages lead to a download. Yaap keeps them only in a scrambled form, and they
+            don't say who you are.
+          </p>
+          <p>
+            Opt out in the notice that comes up on your first visit, or{' '}
+            <button type="button" className="choice" onClick={openNotice}>
+              change your choice
+            </button>
+            , and the ids are deleted from your browser, which remembers only that you opted out. Your visits are
+            then counted without them, so they can't be told apart from anyone else's.
+          </p>
+          <p>
+            Cloudflare, which hosts the site, keeps short-lived logs of the requests it serves, to keep the site
+            running and safe.
           </p>
         </Part>
 
@@ -137,8 +158,9 @@ function Privacy() {
 function Part({ title, children }: { title: string; children: ReactNode }) {
   const [ref, reveal] = useReveal<HTMLElement>()
 
+  // An id from the title ("This website" is #this-website), for links here.
   return (
-    <section ref={ref} className={`rel ${reveal}`}>
+    <section ref={ref} id={title.toLowerCase().replaceAll(' ', '-')} className={`rel ${reveal}`}>
       <div className="when">
         <h2>{title}</h2>
       </div>

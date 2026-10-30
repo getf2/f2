@@ -169,10 +169,35 @@ pub fn open(path: PathBuf, select: Option<PathBuf>, cx: &mut App) {
         app_owns_titlebar_drag: true,
         ..Default::default()
     };
-    let opened = gpui_kit::open_window(options, cx, |window, cx| cx.new(|cx| Browser::new(path, select, window, cx)));
+    let opened = gpui_kit::open_window(options, cx, |window, cx| cx.new(|cx| Browser::new(path, select, false, window, cx)));
     if let Err(e) = opened {
         eprintln!("couldn't open a window: {e}");
     }
+}
+
+/// A window for a folder laid out for Finder (a disk image's: see
+/// `disk_images`): `content` points under an ordinary title bar, no
+/// toolbar or sidebar, its icons over its picture. Centered on the screen.
+pub fn open_laid_out(path: PathBuf, content: (f32, f32), cx: &mut App) {
+    let options = WindowOptions {
+        window_bounds: Some(WindowBounds::Windowed(Bounds::centered(None, size(px(content.0), px(content.1)), cx))),
+        titlebar: Some(TitlebarOptions { title: Some(crate::finder::display_name(&path).into()), appears_transparent: false, traffic_light_position: None }),
+        is_resizable: true,
+        ..Default::default()
+    };
+    let opened = gpui_kit::open_window(options, cx, |window, cx| cx.new(|cx| Browser::new(path, None, true, window, cx)));
+    if let Err(e) = opened {
+        eprintln!("couldn't open a window: {e}");
+    }
+}
+
+/// The window laid out for `path` (see `open_laid_out`), brought to the
+/// front, if one's open.
+pub fn bring_forward(path: &std::path::Path, cx: &mut App) -> bool {
+    let browsers: Vec<Entity<Browser>> = cx.global::<Browsers>().0.values().filter_map(|b| b.upgrade()).collect();
+    let Some(browser) = browsers.into_iter().find(|b| b.read(cx).laid_out && b.read(cx).current().read(cx).folder() == path) else { return false };
+    let handle = browser.read(cx).window;
+    handle.update(cx, |_, window, _| window.activate_window()).is_ok()
 }
 
 /// Show a folder (or, with `search`, the search field, for the whole Mac)
@@ -387,11 +412,17 @@ pub struct Browser {
     /// The frame last seen, and the pending save of it.
     frame: Option<Bounds<Pixels>>,
     save_frame: Task<()>,
+    /// Laid out as its folder's maker set it for Finder (see
+    /// `open_laid_out`): one tab, one pane, its size not kept for others.
+    laid_out: bool,
 }
 
 impl Browser {
-    fn new(path: PathBuf, select: Option<PathBuf>, window: &mut Window, cx: &mut Context<Self>) -> Browser {
+    fn new(path: PathBuf, select: Option<PathBuf>, laid_out: bool, window: &mut Window, cx: &mut Context<Self>) -> Browser {
         let first = Self::make_tab(path, select, window, cx);
+        if laid_out {
+            first.update(cx, |finder, cx| finder.lay_out_as_made(cx));
+        }
         let token = cx.entity_id().as_u64();
         let me = cx.entity().downgrade();
         cx.global_mut::<Browsers>().0.insert(token, me);
@@ -402,8 +433,9 @@ impl Browser {
             promises: false,
             frame: None,
             save_frame: Task::ready(()),
+            laid_out,
         };
-        if Settings::get(cx).dual_pane {
+        if Settings::get(cx).dual_pane && !laid_out {
             this.set_split(true, window, cx);
         }
         this.activate(Side::Left, 0, window, cx);
@@ -591,6 +623,9 @@ impl Browser {
 
     /// Remember the window's frame (a second after it stops changing).
     fn track_frame(&mut self, window: &Window, cx: &mut Context<Self>) {
+        if self.laid_out {
+            return;
+        }
         let bounds = window.bounds();
         if self.frame == Some(bounds) {
             return;
@@ -627,6 +662,11 @@ impl Render for Browser {
             .key_context(if self.right.is_some() { SPLIT } else { CONTEXT })
             .size_full()
             .on_action(cx.listener(|this, _: &NewTab, window, cx| {
+                // (Laid out: a new window, ordinary, at its folder.)
+                if this.laid_out {
+                    let path = this.left.current().read(cx).folder().to_path_buf();
+                    return open(path, None, cx);
+                }
                 let side = this.focused(window, cx);
                 let Some(pane) = this.pane(side) else { return };
                 let path = pane.current().read(cx).folder().to_path_buf();
@@ -650,7 +690,11 @@ impl Render for Browser {
             }))
             .on_action(cx.listener(|this, _: &NextTab, window, cx| this.step(this.focused(window, cx), 1, window, cx)))
             .on_action(cx.listener(|this, _: &PrevTab, window, cx| this.step(this.focused(window, cx), -1, window, cx)))
-            .on_action(cx.listener(|this, _: &ToggleDualPane, window, cx| this.toggle_split(window, cx)))
+            .on_action(cx.listener(|this, _: &ToggleDualPane, window, cx| {
+                if !this.laid_out {
+                    this.toggle_split(window, cx)
+                }
+            }))
             .on_action(cx.listener(|this, _: &SwitchPane, window, cx| this.switch_pane(window, cx)))
             .on_action(cx.listener(|this, _: &SwapPanes, _, cx| this.swap(cx)))
             .on_action(cx.listener(|this, _: &OpenInOtherPane, window, cx| {

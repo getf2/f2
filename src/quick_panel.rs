@@ -3313,6 +3313,10 @@ impl QuickPanel {
         }
         recent::chose(Chosen::Path(entry.path.clone()));
         let folder = entry.is_dir && !entry.is_bundle();
+        // (A disk image: mounted, and its volume shown, by F2.)
+        if !reveal && crate::disk_images::is_disk_image(&entry.path) {
+            return crate::disk_images::open(entry.path, None, cx);
+        }
         if !reveal && !folder {
             // (An app, or a file in its app, comes forward: not Finder2.)
             return cx.open_with_system(&entry.path);

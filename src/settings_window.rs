@@ -246,6 +246,8 @@ struct SettingsWindow {
     palette: Palette,
     /// Whether other apps' "Show in Finder" comes here.
     instead_of_finder: bool,
+    /// Disk images open in F2 (see `disk_images`), not DiskImageMounter.
+    disk_images_here: bool,
     /// Why changing that didn't work.
     takeover_error: Option<String>,
     /// The shortcut being recorded (the next keys pressed).
@@ -392,6 +394,7 @@ impl SettingsWindow {
             tab: Tab::General,
             palette: Palette::for_window(window),
             instead_of_finder: crate::takeover::is_default(),
+            disk_images_here: crate::macos::disk_images_ours(),
             takeover_error: None,
             recording: None,
             editing: None,
@@ -408,6 +411,22 @@ impl SettingsWindow {
             icons,
             _subscriptions: subscriptions,
         }
+    }
+
+    /// Open disk images here (or in DiskImageMounter again), from other
+    /// apps too.
+    fn open_disk_images_here(&mut self, ours: bool, cx: &mut Context<Self>) {
+        cx.spawn(async move |this, cx| {
+            let result = cx.background_executor().spawn(async move { crate::macos::set_disk_images_ours(ours) }).await;
+            let now = cx.background_executor().spawn(async { crate::macos::disk_images_ours() }).await;
+            this.update(cx, |this, cx| {
+                this.disk_images_here = now;
+                this.takeover_error = result.err();
+                cx.notify();
+            })
+            .ok();
+        })
+        .detach();
     }
 
     /// Make this app (or Finder again) what other apps' "Show in Finder"
@@ -1637,6 +1656,30 @@ impl Render for SettingsWindow {
                                     .on_click(cx.listener(|this, _, _, cx| {
                                         let ours = !this.instead_of_finder;
                                         this.use_instead_of_finder(ours, cx)
+                                    })),
+                            ),
+                    )
+                    // (macOS's own leaves an image's window to Finder: with
+                    // Finder quit, nothing shows.)
+                    .child(
+                        div()
+                            .mt_2()
+                            .flex()
+                            .items_center()
+                            .gap_3()
+                            .child(div().flex_1().min_w_0().text_size(px(12.)).text_color(palette.secondary).child(if self.disk_images_here {
+                                format!("Disk images (.dmg) open in {}, laid out as their makers set them, even with Finder quit.", crate::APP_NAME)
+                            } else {
+                                "Disk images (.dmg) from other apps open in macOS's DiskImageMounter, which needs Finder to show them.".to_string()
+                            }))
+                            .child(
+                                glass(26., &palette)
+                                    .id("disk-images")
+                                    .px_3()
+                                    .child(if self.disk_images_here { "Use macOS's Again".to_string() } else { format!("Use {}", crate::APP_NAME) })
+                                    .on_click(cx.listener(|this, _, _, cx| {
+                                        let ours = !this.disk_images_here;
+                                        this.open_disk_images_here(ours, cx)
                                     })),
                             ),
                     )

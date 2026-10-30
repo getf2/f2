@@ -29,8 +29,9 @@ sub-millisecond whole-disk index feel faster than Finder + Spotlight?
 ## What it does
 
 - **A Finder, quicker**: windows and tabs, icons, list, columns and
-  gallery, two panes, archives opened like folders, your servers over SSH,
-  and search as you type across the whole disk.
+  gallery, two panes, archives opened like folders, disk images as their
+  makers laid them out, your servers over SSH, and search as you type
+  across the whole disk.
 - **Quick Open**, a launcher over any app (⌘Space): apps, files and
   commands, answers as you type (sums, money, the time anywhere,
   translations, the weather…), the clipboard's history, emoji, snippets.

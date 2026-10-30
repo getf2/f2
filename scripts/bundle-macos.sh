@@ -110,7 +110,8 @@ cat > "$APP/Contents/Info.plist" <<PLIST
     <key>NSHumanReadableCopyright</key><string>© $(date +%Y) Dagur Leó Bergsson</string>
     <key>LSMinimumSystemVersion</key><string>$MIN_MACOS</string>
     <key>LSApplicationCategoryType</key><string>public.app-category.productivity</string>
-    <!-- Folders: dropped on the Dock icon, or Open With. -->
+    <!-- Folders: dropped on the Dock icon, or Open With. Disk images too,
+         and what opens them once Settings say so (src/disk_images.rs). -->
     <key>CFBundleDocumentTypes</key>
     <array>
         <dict>
@@ -118,6 +119,19 @@ cat > "$APP/Contents/Info.plist" <<PLIST
             <key>CFBundleTypeRole</key><string>Viewer</string>
             <key>LSHandlerRank</key><string>Alternate</string>
             <key>LSItemContentTypes</key><array><string>public.folder</string></array>
+        </dict>
+        <dict>
+            <key>CFBundleTypeName</key><string>Disk Image</string>
+            <key>CFBundleTypeRole</key><string>Viewer</string>
+            <key>LSHandlerRank</key><string>Alternate</string>
+            <key>LSItemContentTypes</key>
+            <array>
+                <string>com.apple.disk-image-udif</string>
+                <string>public.iso-image</string>
+                <string>com.apple.disk-image-cdr</string>
+                <string>com.apple.disk-image-sparse</string>
+                <string>com.apple.disk-image-sparse-bundle</string>
+            </array>
         </dict>
     </array>
     <!-- malloc's space-efficient mode: see space_efficient in src/main.rs. -->

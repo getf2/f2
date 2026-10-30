@@ -25,6 +25,8 @@ Search is [fsearch](https://github.com/noahdunnagan/fsearch), linked in
 - `src/listing.rs` the item model; `src/fileops.rs` file operations;
   `src/icons.rs` icons and thumbnails; `src/info.rs` Get Info;
   `src/style.rs` Finder's look; `src/archives.rs` archives as folders;
+  `src/disk_images.rs` disk images (attached, and shown as laid out for
+  Finder), `src/finder/install.rs` an image's app installed;
   `src/tools.rs` the terminal and editor.
 - `src/search.rs` fsearch (and folder sizes from its index);
   `src/natural.rs` searching in plain words.

@@ -664,6 +664,7 @@ impl Finder {
         let selected = self.is_chosen(ix);
         let shown = self.icons.get(entry, icon_px);
         let renaming = self.renaming.as_ref().filter(|r| r.path == entry.path).map(|r| r.input.clone());
+        let label = self.label_color();
         let name = match renaming {
             Some(input) => rename_field(&input, 20.).w(px(width - 8.)).into_any_element(),
             None => div()
@@ -675,6 +676,7 @@ impl Finder {
                 .line_clamp(2)
                 .text_ellipsis()
                 .overflow_hidden()
+                .when_some(label, |d, label| d.text_color(label))
                 .when(selected && focused, |d| d.bg(palette.selection).text_color(palette.selected_text))
                 .when(selected && !focused, |d| d.bg(palette.selection_inactive))
                 .child(entry.display_name(show_all))

@@ -517,3 +517,22 @@ bool nf_window_focus(int32_t pid, uint32_t number) {
         return done;
     }
 }
+
+// How tall a window's title bar is (with no toolbar, as a disk image's
+// window has): what's under it is that much less than the window.
+double nf_titlebar_height(void) {
+    NSRect content = NSMakeRect(0, 0, 100, 100);
+    NSWindowStyleMask style = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable | NSWindowStyleMaskMiniaturizable;
+    return [NSWindow frameRectForContentRect:content styleMask:style].size.height - content.size.height;
+}
+
+// Let the process `pid` (F2's own dialog, run as a process of its own)
+// come forward: since macOS 14 the app in front has to let it.
+void nf_yield_to(int32_t pid) {
+    dispatch_async(dispatch_get_main_queue(), ^{
+        if (@available(macOS 14, *)) {
+            NSRunningApplication *app = [NSRunningApplication runningApplicationWithProcessIdentifier:pid];
+            if (app) [NSApp yieldActivationToApplication:app];
+        }
+    });
+}

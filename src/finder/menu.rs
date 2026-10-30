@@ -812,6 +812,12 @@ impl Finder {
             if !entry.alias && crate::archives::is_archive(&entry.path) {
                 return self.open_archive(entry.path, window, cx);
             }
+            // A disk image: mounted here, its volume shown as it's laid out.
+            if !entry.alias && crate::disk_images::is_disk_image(&entry.path) {
+                self.show_notice(format!("Opening “{}”…", entry.name), cx);
+                crate::disk_images::open(entry.path, Some(cx.entity().downgrade()), cx);
+                continue;
+            }
             let target = if entry.alias && !entry.is_dir {
                 match macos::resolve_alias(&entry.path) {
                     Some(original) => original,
@@ -1133,6 +1139,11 @@ impl Finder {
     }
 
     pub(super) fn eject(&mut self, path: PathBuf, window: &mut Window, cx: &mut Context<Self>) {
+        // (A disk image's window, laid out: it closes, and the image goes.)
+        if self.laid_out && self.cwd.starts_with(&path) {
+            window.remove_window();
+            return super::install::eject_away(path, None, cx);
+        }
         // Step off the volume first: nothing in use can be ejected.
         if self.cwd.starts_with(&path) {
             self.go_place(home(), window, cx);

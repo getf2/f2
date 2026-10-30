@@ -202,6 +202,25 @@ uint8_t *nf_image_bitmap(const char *path, int max, uint32_t *w, uint32_t *h) {
     }
 }
 
+// A folder's background picture (Finder's, behind a disk image's icons):
+// how big it's shown, in points (`*pw` by `*ph`: its own size, as Finder
+// shows it), and drawn for a screen of `scale` (its 2x representation, if
+// it has one) as premultiplied BGRA, `*w` by `*h`, malloc'd; NULL if it
+// can't be read. Off the main thread is fine.
+uint8_t *nf_picture_bitmap(const char *path, double scale, double *pw, double *ph, uint32_t *w, uint32_t *h) {
+    @autoreleasepool {
+        NSImage *image = [[NSImage alloc] initWithContentsOfFile:@(path)];
+        if (!image || image.size.width < 1 || image.size.height < 1) return NULL;
+        *pw = image.size.width;
+        *ph = image.size.height;
+        NSRect rect = NSMakeRect(0, 0, *pw, *ph);
+        NSAffineTransform *scaled = [NSAffineTransform transform];
+        [scaled scaleBy:scale];
+        CGImageRef best = [image CGImageForProposedRect:&rect context:nil hints:@{NSImageHintCTM : scaled}];
+        return best ? bgra_of(best, w, h) : NULL;
+    }
+}
+
 // A PDF's pages `first` to `first + most - 1`, each `width` pixels wide, on
 // white, turned as the page says: each handed to `page` (premultiplied
 // BGRA, its own to free). How many pages it has; -1 if it can't be read (or

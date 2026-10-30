@@ -24,6 +24,7 @@ mod dev;
 mod devices;
 mod dictation;
 mod dictionary;
+mod disk_images;
 mod ds_store;
 mod browser;
 mod disk_usage;
@@ -335,6 +336,11 @@ fn space_efficient() {
 fn open_urls(urls: Vec<String>, cx: &mut App) {
     for url in urls {
         let Some(path) = file_url_path(&url) else { continue };
+        // (A disk image, F2 being what opens them: see `disk_images`.)
+        if disk_images::is_disk_image(&path) {
+            disk_images::open(path, None, cx);
+            continue;
+        }
         if path.is_dir() && !listing::is_package(&path) {
             browser::open(path, None, cx);
         } else if let Some(parent) = path.parent() {

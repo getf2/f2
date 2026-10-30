@@ -189,6 +189,18 @@ export const CATEGORIES: Category[] = [
       },
       { name: 'AirDrop and email', text: 'Send a file from Quick Open, without opening a window.', since: '0.1.5' },
       { name: 'Recent and favorites', text: 'With nothing typed, it lists what you opened lately, your favorite folders and every app.' },
+      { name: 'Simple mode', text: 'Just the search field until you type, as Spotlight looks. Turn it on in Settings › Quick Open.', since: '0.2.2' },
+      {
+        name: 'Put it anywhere',
+        text: 'Drag Quick Open by its bottom bar to where you like it. It snaps to the middle, with guide lines, and opens there from then on.',
+        since: '0.2.2',
+      },
+      {
+        name: 'Files only when asked',
+        text: 'Leave files out of what’s found as you type, and type f and a space first when you want them. It finds only files and folders either way.',
+        examples: ['f budget'],
+        since: '0.2.2',
+      },
       { name: 'Hints as you type', text: 'Gray text finishes what you’re typing: “time” suggests “in tokyo”. Tab takes it.' },
       { name: 'Korean, Japanese and Chinese', text: 'Typing in them works as it should, and you can ask in them too.', examples: ['東京の時間', '도쿄 시간'] },
       {
@@ -369,6 +381,16 @@ export const CATEGORIES: Category[] = [
       { name: 'Brightness and music', text: 'Set the screen’s brightness. Play, pause and skip tracks.', examples: ['brightness 50'] },
       { name: 'Now playing', text: 'The song in Music or Spotify, with its artwork. Pause, skip, love it or find its lyrics.', examples: ['now playing'], since: '0.1.6' },
       { name: 'Play music', text: 'The best match from your Music library, or a search in Apple Music or Spotify.', examples: ['play taylor swift', 'play chill playlist'], since: '0.1.6' },
+      {
+        name: 'The notch',
+        text: 'It grows out to the sides to show a timer counting down, the stopwatch, a recording, dictation listening or the song playing. Point at it for all of that, to stop or skip. Turn it on in Settings › Notch.',
+        since: '0.2.2',
+      },
+      {
+        name: 'Notes from the notch',
+        text: 'F2’s notes come down from it instead of the corner: a timer done, text copied. Screens without a notch get one while there’s something to show.',
+        since: '0.2.2',
+      },
       { name: 'Wi-Fi password', text: 'Shows a network’s password, with a QR code guests can scan to join.', examples: ['wifi password'] },
       { name: 'Speed test', text: 'Download, upload and responsiveness, with macOS’s own test.', examples: ['speed test'] },
       { name: 'Is the internet down?', text: 'Checks Wi-Fi, your router and the internet one at a time, and says what’s wrong in plain words.', examples: ['is the internet down'], since: '0.1.6' },
@@ -455,6 +477,11 @@ export const CATEGORIES: Category[] = [
       },
       { name: 'Quick Look', text: 'Videos, Office documents and the rest, in macOS’s own preview, one click from F2’s.' },
       { name: 'Zip files as folders', text: 'Open .zip, .rar, .7z and .tar files like folders. Extract unpacks them.' },
+      {
+        name: 'Disk images, without Finder',
+        text: 'A .dmg opens in F2 as its maker laid it out: their picture, the app beside the arrow. Install puts the app in Applications, then Eject tidies up. Even with Finder quit.',
+        since: '0.2.2',
+      },
       { name: 'Two folders side by side', text: 'Drag from one to the other, each with its own tabs.', keys: ['⌥⌘S'] },
       { name: 'Go to Folder', text: 'Type where to go, with completion. Connect to a file server too.', keys: ['⇧⌘G'] },
       { name: 'Preview pane', text: 'And a path bar, and a status bar with the free space.', keys: ['⇧⌘P'] },

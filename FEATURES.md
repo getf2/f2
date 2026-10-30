@@ -126,8 +126,11 @@ more detail.
 - Settings › Quick Open:
   - The shortcut: one of the presets, or record your own.
   - Which screen it opens on: the one with the pointer, the active window's, or the main one.
+  - Where on it: drag it by its bottom bar (or its search field while it's empty) anywhere. It snaps to the middle and to where it opened, a guide line showing each, and opens there from then on (Center It Again puts it back).
   - The font and the text size.
-- With nothing typed, it lists Recent, Favorites, the commands, every app and System Settings' panes.
+  - Simple mode: only the search field until you type.
+  - Whether files and folders are found as you type, or only after "f ".
+- With nothing typed, it lists Recent, Favorites, the commands, every app and System Settings' panes (in simple mode, nothing).
 
 ### Finding things
 - **Apps**:
@@ -136,6 +139,8 @@ more detail.
 - **Files and folders** anywhere on the Mac, by a few letters, typos forgiven:
   - What you've worked on lately comes first.
   - Return opens it; ⌘Return shows it in its folder.
+  - "f" and a space first ("f budget") finds only files and folders. With files turned off in Settings, that's the way to them, or Search Files under the results.
+- Apps linked into Applications are found too (Safari, which lives in the system's Cryptex).
 - A path ("~/Do…") goes to that folder. A web address opens, and anything else can be searched on the web.
 - ⌘K on a result shows what else you can do with it:
   - Show in F2, open in the terminal (⌘T) or the editor (⌘E).

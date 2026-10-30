@@ -1752,6 +1752,48 @@ impl Render for SettingsWindow {
                         ]
                         .map(|(id, label, screen)| choice(id, label, settings.quick_open_screen == screen, Box::new(move |s| s.quick_open_screen = screen))),
                     ))
+                    .child(
+                        div()
+                            .mt_1()
+                            .flex()
+                            .items_center()
+                            .gap_3()
+                            .child(div().flex_1().min_w_0().text_size(px(11.)).text_color(palette.secondary).child(
+                                "Drag it by its bottom bar, or by its search field while it's empty, to put it anywhere: it snaps to the middle.",
+                            ))
+                            .when(settings.quick_open_position.is_some(), |d| {
+                                d.child(
+                                    glass(24., &palette)
+                                        .id("qo-center")
+                                        .px_3()
+                                        .text_size(px(12.))
+                                        .child("Center It Again")
+                                        .on_click(|_, _, cx| Settings::update(cx, |s| s.quick_open_position = None)),
+                                )
+                            }),
+                    )
+                    .child(heading("Results:"))
+                    .child(check(
+                        "qo-simple",
+                        "Simple mode: only the search field until you type".into(),
+                        settings.quick_open_simple,
+                        |s| s.quick_open_simple = !s.quick_open_simple,
+                        window,
+                    ))
+                    .child(div().pl(px(22.)).text_size(px(11.)).text_color(palette.secondary).child(
+                        "Recent, Favorites, the commands and the apps aren't listed with nothing typed.",
+                    ))
+                    .child(div().mt_2().child(check(
+                        "qo-files",
+                        "Find files and folders as you type".into(),
+                        settings.quick_open_files,
+                        |s| s.quick_open_files = !s.quick_open_files,
+                        window,
+                    )))
+                    .child(div().pl(px(22.)).text_size(px(11.)).text_color(palette.secondary).child(
+                        "When it's off, type f and a space first (“f budget”), or choose Search Files under the results. \
+                         “f budget” finds only files and folders either way.",
+                    ))
                     .child(heading("Font:"))
                     .child(
                         // (Each in itself.)

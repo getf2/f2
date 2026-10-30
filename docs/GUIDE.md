@@ -16,7 +16,12 @@ from anywhere (Spotlight's, once that's turned off in System Settings;
 Settings > Quick Open picks another, or records your own, and its font and
 text size), ⌘P in a window, or the menu bar item. It opens on the screen
 with the pointer, or the active window's, or the main one (Settings >
-Quick Open).
+Quick Open). Dragged by its bottom bar (or its field while it's empty), it
+goes anywhere on the screen, snapping to the middle and to where it
+opened, and opens there from then on (Settings' Center It Again puts it
+back). Simple mode shows only the field until you type; with files turned
+off (Settings > Quick Open), files and folders are found only after "f "
+("f budget"), which finds only them either way.
 It's a launcher, as Raycast is, and it answers as you type:
 
 **Answers.** A sum is worked out (`12*7`, `80 + 15%`, `sqrt 2`, `5 km in

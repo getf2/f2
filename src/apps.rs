@@ -110,8 +110,19 @@ fn collect(path: &Path, depth: usize, languages: &[String], apps: &mut Vec<App>)
         return;
     }
     for entry in std::fs::read_dir(path).into_iter().flatten().flatten() {
-        if entry.file_type().is_ok_and(|t| t.is_dir()) {
-            collect(&entry.path(), depth - 1, languages, apps);
+        match entry.file_type() {
+            Ok(t) if t.is_dir() => collect(&entry.path(), depth - 1, languages, apps),
+            // (A link, where it leads: Safari's, in /Applications, into the
+            // system's Cryptex, where it runs from. Its icon then isn't a
+            // link's.)
+            Ok(t) if t.is_symlink() => {
+                if let Ok(real) = entry.path().canonicalize()
+                    && real.is_dir()
+                {
+                    collect(&real, depth - 1, languages, apps);
+                }
+            }
+            _ => {}
         }
     }
 }

@@ -307,6 +307,15 @@ pub struct Settings {
     /// field's text size.
     pub quick_open_font: String,
     pub quick_open_text_size: f32,
+    /// Where Quick Open was dragged to, as fractions of its screen: its
+    /// middle across, its top down (None: the middle, a fifth down).
+    pub quick_open_position: Option<[f32; 2]>,
+    /// Simple: with nothing typed, only the search field (no Recent,
+    /// Favorites, commands or apps till something is).
+    pub quick_open_simple: bool,
+    /// Files and folders looked for as you type; else only after "f "
+    /// (see `quick_panel::files_asked`).
+    pub quick_open_files: bool,
     /// Keep a history of what's copied, this many at most.
     pub clipboard_history: bool,
     pub clipboard_keep: usize,
@@ -546,6 +555,9 @@ impl Default for Settings {
             quick_open_screen: QuickScreen::Pointer,
             quick_open_font: "system".into(),
             quick_open_text_size: 22.,
+            quick_open_position: None,
+            quick_open_simple: false,
+            quick_open_files: true,
             clipboard_history: true,
             clipboard_keep: 200,
             paste_on_return: true,

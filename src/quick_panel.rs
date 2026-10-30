@@ -52,6 +52,8 @@ const SHOWN: usize = 9;
 const APPS: usize = 4;
 const COMMANDS: usize = 4;
 const RECENT: usize = 8;
+/// Files found at most when only they're asked for ("f budget").
+const FILES: usize = 20;
 const ICON: f32 = 20.;
 /// The panel's parts' heights, to fit it to what it shows (the search
 /// field's: see `field_height`).
@@ -61,6 +63,9 @@ const NOTE: f32 = 44.;
 const HEADING: f32 = 30.;
 /// The list's height at most: more scrolls (a row cut off says so).
 const LIST: f32 = 440.;
+/// Where its top is, unless it's been dragged elsewhere: this much of its
+/// screen's height down.
+const HOME: f32 = 0.22;
 /// An action's line, in ⌘K's list.
 const ACTION: f32 = 36.;
 const RADIUS: f32 = 16.;
@@ -273,6 +278,21 @@ const ICONS_KEPT: usize = 32 << 20;
 /// Shown once the list is in, or after this, whichever is first.
 const REVEAL_BY: std::time::Duration = std::time::Duration::from_millis(150);
 
+/// Where the panel was dragged to (see `macos::panel_drag`), for Settings
+/// to keep: from AppKit, then on the main thread.
+static MOVED: OnceLock<futures::channel::mpsc::UnboundedSender<(f64, f64)>> = OnceLock::new();
+
+extern "C" fn panel_moved(across: f64, down: f64) {
+    if let Some(tx) = MOVED.get() {
+        let _ = tx.unbounded_send((across, down));
+    }
+}
+
+/// How tall the panel can grow: its field, its list, a note and its footer.
+fn tallest(cx: &App) -> f32 {
+    field_height(cx) + LIST + NOTE + FOOTER + 12.
+}
+
 /// Whether the shortcut Settings chose could be had (another app may hold
 /// it).
 pub struct ShortcutTaken(pub bool);
@@ -290,9 +310,30 @@ pub fn init(cx: &mut App) {
     }
     crate::extensions::sync(Settings::get(cx));
     cx.observe_global::<Settings>(|cx| crate::extensions::sync(Settings::get(cx))).detach();
+    // Dragged somewhere: kept (back in the middle, where it was by itself:
+    // forgotten).
+    let (tx, mut moved) = futures::channel::mpsc::unbounded();
+    let _ = MOVED.set(tx);
+    cx.spawn(async move |cx| {
+        while let Some((across, down)) = moved.next().await {
+            let home = (across - 0.5).abs() < 0.001 && (down - HOME as f64).abs() < 0.001;
+            cx.update(|cx| Settings::update(cx, |s| s.quick_open_position = (!home).then_some([across as f32, down as f32])));
+        }
+    })
+    .detach();
     let mut registered = String::new();
     register(&mut registered, cx);
     cx.observe_global::<Settings>(move |cx| register(&mut registered, cx)).detach();
+    // (Simple turned on or off: the list kept from last time, and its
+    // height, aren't what shows now.)
+    let mut simple = Settings::get(cx).quick_open_simple;
+    cx.observe_global::<Settings>(move |cx| {
+        let now = Settings::get(cx).quick_open_simple;
+        if std::mem::replace(&mut simple, now) != now {
+            cx.set_global(Seed::default());
+        }
+    })
+    .detach();
     // The icons, and each one as it's ready (the panel shown, drawn again).
     let (icons, mut finished) = Icons::with_limit(ICONS_KEPT);
     cx.set_global(PanelIcons(icons));
@@ -338,6 +379,8 @@ fn extra(cx: &App, repo: Option<crate::dev::Repo>, selection: Option<String>) ->
         extensions: Vec::new(),
         broken: Vec::new(),
         color_format: settings.shots.color_format.clone(),
+        simple: settings.quick_open_simple,
+        files: settings.quick_open_files,
     }
     .with_extensions(settings.extensions_on())
 }
@@ -644,7 +687,13 @@ fn open(origin: Option<(AnyWindowHandle, WeakEntity<Finder>)>, mode: Mode, cx: &
     // (As tall as it was last time, with the same list: see `Seed`.)
     let seeded = cx.try_global::<Seed>().filter(|seed| mode == Mode::Search && seed.0.is_some() && seed.1 > 0.).map(|seed| seed.1);
     let height = seeded.unwrap_or(field_height(cx) + FOOTER);
-    let bounds = Bounds { origin: point((size.width - px(WIDTH)) / 2., size.height * 0.22), size: gpui::size(px(WIDTH), px(height)) };
+    // Where it was dragged to (the middle, a fifth down, else), on this
+    // screen; all of it on it, with room to grow.
+    let (across, down) = Settings::get(cx).quick_open_position.map_or((0.5, HOME), |[x, y]| (x, y));
+    let (w, h) = (f32::from(size.width), f32::from(size.height));
+    let x = (w * across - WIDTH / 2.).clamp(0., (w - WIDTH).max(0.));
+    let y = (h * down).clamp(0., (h - tallest(cx)).max(0.));
+    let bounds = Bounds { origin: point(px(x), px(y)), size: gpui::size(px(WIDTH), px(height)) };
     let options = WindowOptions {
         window_bounds: Some(WindowBounds::Windowed(bounds)),
         titlebar: None,
@@ -682,7 +731,7 @@ fn open(origin: Option<(AnyWindowHandle, WeakEntity<Finder>)>, mode: Mode, cx: &
             // that's in.
             cx.defer(move |cx| {
                 panel.update(cx, |panel, cx| {
-                    if !panel.items.is_empty() && panel.searched.is_empty() && panel.selection.is_none() {
+                    if (!panel.items.is_empty() || panel.bare(cx)) && panel.searched.is_empty() && panel.selection.is_none() {
                         panel.appear(cx);
                     }
                 })
@@ -1046,6 +1095,18 @@ struct Extra {
     broken: Vec<crate::extensions::Broken>,
     /// How a color's copied first (Settings' `shots.color_format`).
     color_format: String,
+    /// Settings' `quick_open_simple`: nothing listed with nothing typed.
+    simple: bool,
+    /// Settings' `quick_open_files`: files found as you type (else after
+    /// "f ").
+    files: bool,
+}
+
+/// What's looked for as a file's name, if what's typed asks for files and
+/// folders only: "f budget" (unless a quicklink's keyword is "f").
+fn files_asked<'a>(text: &'a str, quicklinks: &[crate::settings::Quicklink]) -> Option<&'a str> {
+    let rest = text.trim_start().strip_prefix("f ").or_else(|| text.trim_start().strip_prefix("F "))?;
+    (!quicklinks.iter().any(|l| l.keyword.trim().eq_ignore_ascii_case("f"))).then(|| rest.trim())
 }
 
 /// A quicklink's link with `query` in it (encoded, for a web address).
@@ -1797,6 +1858,18 @@ fn results(text: &str, mode: Mode, search: &crate::search::Search, extra: Extra)
         }
         Mode::Search => {}
     }
+    // "f budget": files and folders only (the way to them, with Settings'
+    // files off).
+    if let Some(name) = files_asked(text, &extra.quicklinks) {
+        if !name.is_empty() {
+            let heading = crate::natural::translate(name).map_or_else(|| "Files and Folders".to_string(), |p| p.about);
+            items.extend(search.quick_open(name, FILES)?.into_iter().map(Item::File));
+            if !items.is_empty() {
+                sections.push((0, heading.into()));
+            }
+        }
+        return Ok((items, sections));
+    }
     // ":smile": emoji, from the search.
     if let Some(rest) = q.strip_prefix(':')
         && !rest.trim().is_empty()
@@ -1853,6 +1926,10 @@ fn results(text: &str, mode: Mode, search: &crate::search::Search, extra: Extra)
         && let Some(text) = &extra.selection
     {
         section(&mut items, "Selected Text", selection_rows(text));
+        return Ok((items, sections));
+    }
+    // (Simple: only the field, till something's typed.)
+    if q.is_empty() && extra.simple {
         return Ok((items, sections));
     }
     if q.is_empty() {
@@ -2520,13 +2597,33 @@ fn results(text: &str, mode: Mode, search: &crate::search::Search, extra: Extra)
         // (Fewer under apps and commands: the panel stays a launcher. In
         // plain words, "photos from last week": files are what's asked for,
         // and the heading says what was understood.)
+        // (Settings' files off: only when asked for in plain words; else a
+        // row that asks, "f " and what's typed.)
         let plain = crate::natural::translate(q);
-        let room = if plain.is_some() { SHOWN } else { SHOWN.saturating_sub(items.len()).min(if items.is_empty() { SHOWN } else { 5 }).max(3) };
-        let mut files = search.quick_open(q, room + APPS)?;
-        files.retain(|f| !items.iter().any(|i| i.entry().is_some_and(|e| e.path == f.path)));
-        files.truncate(room);
-        let heading = plain.map_or_else(|| "Files and Folders".to_string(), |p| p.about);
-        section(&mut items, &heading, files.into_iter().map(Item::File).collect());
+        if plain.is_some() || extra.files {
+            let room = if plain.is_some() { SHOWN } else { SHOWN.saturating_sub(items.len()).min(if items.is_empty() { SHOWN } else { 5 }).max(3) };
+            let mut files = search.quick_open(q, room + APPS)?;
+            // (Nor a link to an app listed: Safari's, in /Applications. The
+            // index doesn't say it's a link.)
+            files.retain(|f| {
+                let real = f.path.extension().is_some_and(|e| e == "app").then(|| f.path.canonicalize().ok()).flatten();
+                !items.iter().any(|i| i.entry().is_some_and(|e| e.path == f.path || real.as_ref() == Some(&e.path)))
+            });
+            files.truncate(room);
+            let heading = plain.map_or_else(|| "Files and Folders".to_string(), |p| p.about);
+            section(&mut items, &heading, files.into_iter().map(Item::File).collect());
+        } else {
+            let ask = Command {
+                title: format!("Search files for “{q}”"),
+                subtitle: "Or type f and a space first".into(),
+                kind: "Search Files",
+                icon: Icon::Tile("doc.text.magnifyingglass", commands::FINDER2),
+                run: commands::Run::Fill(format!("f {q}")),
+                confirm: None,
+                key: None,
+            };
+            section(&mut items, "Files and Folders", vec![Item::Command(ask)]);
+        }
         section(&mut items, "Web", vec![Item::Command(commands::web(q))]);
     }
     Ok((items, sections))
@@ -2652,8 +2749,10 @@ pub struct QuickPanel {
     error: Option<SharedString>,
     /// What's shown after what's typed, in gray (see `hint`).
     hint: Option<String>,
-    /// What was last looked for (the field's text then).
+    /// What was last looked for (the field's text then), and whether
+    /// what's found for it is still to come.
     searched: String,
+    finding: bool,
     /// The text selected in the app you were in, if it's been taken (see
     /// `show_selected`): what to do with it is listed, till you type.
     selection: Option<String>,
@@ -2749,8 +2848,9 @@ impl QuickPanel {
             Ok(RawWindowHandle::AppKit(appkit)) => appkit.ns_view.as_ptr(),
             _ => std::ptr::null_mut(),
         };
-        // (The list as it was last time, with nothing typed: found again.)
-        let seed = (mode == Mode::Search).then(|| cx.try_global::<Seed>().and_then(|seed| seed.0.clone())).flatten();
+        // (The list as it was last time, with nothing typed: found again.
+        // Simple, it's none.)
+        let seed = (mode == Mode::Search && !Settings::get(cx).quick_open_simple).then(|| cx.try_global::<Seed>().and_then(|seed| seed.0.clone())).flatten();
         let mut this = QuickPanel {
             mode,
             pictures: HashMap::new(),
@@ -2772,6 +2872,7 @@ impl QuickPanel {
             error: None,
             hint: None,
             searched: String::new(),
+            finding: false,
             selection: None,
             origin,
             palette: Palette::for_window(window),
@@ -2812,7 +2913,8 @@ impl QuickPanel {
         };
         let text = self.input.read(cx).value().to_string();
         self.searched = text.clone();
-        self.hint = if self.mode == Mode::Search { hint(&crate::apps::plain_width(&text)) } else { None };
+        self.finding = true;
+        self.hint =if self.mode == Mode::Search { hint(&crate::apps::plain_width(&text)) } else { None };
         let extra = extra(cx, self.repo.clone(), self.selection.clone());
         let mode = self.mode;
         // (Kept, to come up with next time: see `Seed`.)
@@ -2845,6 +2947,7 @@ impl QuickPanel {
                 if this.mode != mode {
                     return this.appear(cx);
                 }
+                this.finding = false;
                 match found {
                     Ok((items, sections)) => {
                         if seeds {
@@ -3739,12 +3842,31 @@ impl QuickPanel {
         self.lines.iter().map(Line::height).sum::<f32>().min(LIST)
     }
 
+    /// Only the field shows: Settings' simple, with nothing typed (or
+    /// nothing found yet for the first that is).
+    fn bare(&self, cx: &App) -> bool {
+        let typed = !self.input.read(cx).value().trim().is_empty();
+        self.mode == Mode::Search
+            && Settings::get(cx).quick_open_simple
+            && self.items.is_empty()
+            && (!typed || self.finding)
+            && self.selection.is_none()
+            && self.acting.is_none()
+            && self.error.is_none()
+    }
+
     /// The height that fits what's shown.
     /// What's said in place of a list, if there's none.
     fn note(&self, cx: &App) -> Option<SharedString> {
         let typed = !self.input.read(cx).value().trim().is_empty();
         if self.mode == Mode::Extension {
             return self.page_note(typed);
+        }
+        if self.bare(cx) {
+            return None;
+        }
+        if self.mode == Mode::Search && self.error.is_none() && self.items.is_empty() && files_asked(&self.input.read(cx).value(), &Settings::get(cx).quicklinks) == Some("") {
+            return Some("Type a few letters of a file's name.".into());
         }
         match (&self.error, self.items.is_empty(), typed, self.mode) {
             (Some(e), ..) => Some(e.clone()),
@@ -3791,7 +3913,18 @@ impl QuickPanel {
         .detach();
     }
 
+    /// Drag the panel, from a press on its footer (or its field, empty).
+    fn start_drag(&self, cx: &App) {
+        if !self.view.is_null() {
+            macos::panel_drag(self.view, tallest(cx), HOME, panel_moved);
+        }
+    }
+
     fn fitting(&self, note: bool, cx: &App) -> f32 {
+        // (The field, and the card's edge.)
+        if self.bare(cx) {
+            return field_height(cx) + 2.;
+        }
         let list = match (self.acting, self.mode) {
             (Some(_), _) => HEADING + self.actions(cx).len() as f32 * ACTION,
             // (The clipboard's preview and the emoji's grid want the room.)
@@ -3843,6 +3976,7 @@ impl QuickPanel {
                 return format!("Paste to {}", self.front.as_deref().unwrap_or("the App")).into();
             }
             Some(Item::Command(Command { run: commands::Run::Snippet(_), .. })) => "Copy Snippet",
+            Some(Item::Command(Command { kind: "Search Files", .. })) => "Search Files",
             Some(Item::Command(Command { run: commands::Run::Fill(_), .. })) => "Type What to Look For",
             Some(Item::Command(Command { run: commands::Run::Quit { .. }, kind: "Quit App", .. })) => "Quit App",
             Some(Item::Command(Command { run: commands::Run::CleanKeyboard(_), .. })) => "Turn Keys Off",
@@ -4584,6 +4718,7 @@ impl Render for QuickPanel {
             let height = if matches!(self.mode, Mode::Search | Mode::Windows | Mode::Extension) { self.list_height() } else { LIST.min(self.lines.iter().map(Line::height).sum()) };
             div().py_1().child(lines.w_full().h(px(height))).into_any_element()
         };
+        let bare = self.bare(cx);
         let footer = self.render_footer(window, cx);
         let (family, text_size) = font(Settings::get(cx));
         // (gpui-kit's input sets its lines 20 px tall, whatever the size:
@@ -4685,9 +4820,14 @@ impl Render for QuickPanel {
                             .flex()
                             .items_center()
                             .relative()
+                            // (Empty, it drags the panel: nothing to select.)
+                            .capture_any_mouse_down(cx.listener(|this, e: &MouseDownEvent, _, cx| {
+                                if e.button == MouseButton::Left && this.input.read(cx).value().is_empty() {
+                                    this.start_drag(cx);
+                                }
+                            }))
                             .px(px(18.))
-                            .border_b_1()
-                            .border_color(palette.separator)
+                            .when(!bare, |d| d.border_b_1().border_color(palette.separator))
                             .when(loading, |d| d.child(loading_light(palette.accent)))
                             .when_some(progress, |d, p| d.child(div().absolute().left_0().bottom(px(-1.)).h(px(2.)).w(relative(p)).bg(palette.accent)))
                             // (Under the field, which is clear: clicks go to it.)
@@ -4780,19 +4920,32 @@ impl Render for QuickPanel {
                                 d.child(div().flex().items_center().gap_2().text_size(px(12.)).text_color(palette.secondary).child(div().max_w(px(200.)).truncate().child(name)).child(self.caps("esc")))
                             }),
                     )
-                    .child(body)
+                    .when(!bare, |d| d.child(body))
                     .when_some(note, |d, note| d.child(div().h(px(NOTE)).px(px(18.)).flex().items_center().text_color(palette.secondary).child(note)))
                     .child(div().flex_1())
-                    .child(footer),
+                    .when(!bare, |d| d.child(div().on_mouse_down(MouseButton::Left, cx.listener(|this, _, _, cx| this.start_drag(cx))).child(footer))),
             )
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{Item, completion, cut, hint};
+    use super::{Item, completion, cut, files_asked, hint};
     use crate::commands::{self, Command, Icon};
     use crate::listing::Entry;
+    use crate::settings::Quicklink;
+
+    #[test]
+    fn files_only() {
+        assert_eq!(files_asked("f budget", &[]), Some("budget"));
+        assert_eq!(files_asked("  F  budget 2026 ", &[]), Some("budget 2026"));
+        assert_eq!(files_asked("f ", &[]), Some(""), "asked, with no name yet");
+        assert_eq!(files_asked("f", &[]), None);
+        assert_eq!(files_asked("finder", &[]), None);
+        assert_eq!(files_asked("ff budget", &[]), None);
+        let mine = Quicklink { name: "Mine".into(), keyword: "f".into(), link: "https://example.com/?q={query}".into() };
+        assert_eq!(files_asked("f budget", &[mine]), None, "a quicklink's keyword comes first");
+    }
 
     #[test]
     fn completions() {

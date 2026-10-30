@@ -19,6 +19,23 @@ export type Release = {
 
 export const RELEASES: Release[] = [
   {
+    version: '0.2.2',
+    title: 'The notch, put to work',
+    summary: 'The notch shows what’s going on, and F2’s notes come down from it. Disk images open without Finder, and Quick Open goes where you put it.',
+    art: { paint: 'night-aurora', y: '50%', queries: ['now playing', 'f budget', 'timer 5 min'] },
+    added: [
+      'The notch, as Alcove has it: a timer counting down, the stopwatch, a screen recording, dictation listening or the song playing show beside it. Point at it to see all of that, stop it or skip, and your last notes. Turn it on in Settings › Notch.',
+      'F2’s notes come down from the notch instead of the corner: a timer done, text copied. Screens without a notch get one while there’s something to show.',
+      'Disk images open in F2 as their makers laid them out, their picture behind the app and the arrow, even with Finder quit. Install puts the app in Applications, then Eject tidies up.',
+      'Drag Quick Open anywhere on the screen: it snaps to the middle, and opens there from then on.',
+      'Simple mode, for just the search field until you type. And files can wait till you ask for them, with f and a space.',
+    ],
+    fixed: [
+      '“now playing” works with Spotify again, with its artwork.',
+      'Quick Open finds Safari, which newer macOS keeps outside Applications.',
+    ],
+  },
+  {
     version: '0.2.1',
     date: '2026-10-29',
     title: 'Say it, and it’s typed',

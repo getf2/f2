@@ -167,6 +167,8 @@ pub enum Now {
     Ask(Player),
     /// It's been said no, in System Settings.
     Denied(Player),
+    /// It was asked, and said something F2 didn't know (in the log).
+    Failed(Player),
 }
 
 /// Where artwork's kept: one file a song (GPUI keeps images by their path).
@@ -256,13 +258,39 @@ return out"#,
     )
 }
 
-/// Spotify's song, its artwork fetched (Spotify gives its address).
+/// Spotify's song, its artwork fetched (Spotify gives its address). (Its
+/// numbers rounded here, not by Spotify: `round` told to Spotify fails,
+/// "Can't make player position into type real".)
 const SPOTIFY_NOW: &str = r#"tell application "Spotify"
 	set s to player state as text
 	if s is "stopped" then return "stopped"
 	set t to current track
-	return s & tab & (name of t) & tab & (artist of t) & tab & (album of t) & tab & (((duration of t) / 1000) as integer) & tab & ((round (player position)) as integer) & tab & (artwork url of t)
-end tell"#;
+	set n to name of t
+	set a to artist of t
+	set al to album of t
+	set d to 0
+	set p to 0
+	set u to ""
+	try
+		set d to duration of t
+	end try
+	try
+		set p to player position
+	end try
+	try
+		set u to artwork url of t
+	end try
+end tell
+set secs to 0
+set pos to 0
+try
+	set secs to (round (d / 1000)) as integer
+end try
+try
+	set pos to (round p) as integer
+end try
+if u is missing value then set u to ""
+return s & tab & (n as text) & tab & (a as text) & tab & (al as text) & tab & secs & tab & pos & tab & u"#;
 
 fn spotify_now() -> Result<Option<Playing>, String> {
     let out = script(SPOTIFY_NOW)?;
@@ -297,6 +325,7 @@ pub fn now() -> Now {
     let mut paused = None;
     let mut stopped = None;
     let mut blocked = None;
+    let mut failed = None;
     for player in open {
         match crate::macos::automation(player.bundle(), false) {
             0 => {}
@@ -322,10 +351,13 @@ pub fn now() -> Now {
             Ok(None) => {
                 stopped.get_or_insert(player);
             }
-            Err(why) => eprintln!("couldn't ask {} what's playing: {why}", player.name()),
+            Err(why) => {
+                eprintln!("couldn't ask {} what's playing: {why}", player.name());
+                failed.get_or_insert(Now::Failed(player));
+            }
         }
     }
-    paused.map(Now::Playing).or(blocked).or(stopped.map(Now::Stopped)).unwrap_or(Now::NotOpen)
+    paused.map(Now::Playing).or(blocked).or(failed).or(stopped.map(Now::Stopped)).unwrap_or(Now::NotOpen)
 }
 
 /// "1:05", "1:02:03".

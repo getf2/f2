@@ -23,7 +23,7 @@ export const RELEASES: Release[] = [
     date: '2026-10-30',
     title: 'The notch, put to work',
     summary: 'The notch shows what’s going on, and F2’s notes come down from it. Disk images open without Finder, and Quick Open goes where you put it.',
-    art: { paint: 'night-aurora', y: '50%', queries: ['now playing', 'f budget', 'timer 5 min'] },
+    art: { paint: 'night-aurora', y: '50%', glass: 'notch' },
     added: [
       'The notch, as Alcove has it: a timer counting down, the stopwatch, a screen recording, dictation listening or the song playing show beside it. Point at it to see all of that, stop it or skip, and your last notes. Turn it on in Settings › Notch.',
       'F2’s notes come down from the notch instead of the corner: a timer done, text copied. Screens without a notch get one while there’s something to show.',

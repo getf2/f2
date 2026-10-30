@@ -24,7 +24,7 @@ export type Art = {
   // The painting's vertical position, as background-position's.
   y?: string
   shots?: Shot[]
-  glass?: 'menu' | 'snap' | 'marquee' | 'recording' | 'dictation'
+  glass?: 'menu' | 'snap' | 'marquee' | 'recording' | 'dictation' | 'notch'
   queries?: string[]
 }
 
@@ -57,6 +57,7 @@ export function Plate({ art }: { art: Art }) {
       {art.glass === 'snap' && <Snap />}
       {(art.glass === 'marquee' || art.glass === 'recording') && <Marquee recording={art.glass === 'recording'} />}
       {art.glass === 'dictation' && <Dictation />}
+      {art.glass === 'notch' && <Notch />}
     </div>
   )
 }
@@ -110,6 +111,64 @@ function Dictation() {
         {Array.from({ length: 9 }, (_, i) => (
           <i key={i} style={{ animationDelay: `${-((i * 0.37) % 1.1).toFixed(2)}s` }} />
         ))}
+      </div>
+    </div>
+  )
+}
+
+// The notch opened, as F2 draws it, hanging from the top of the screen under
+// the menu bar: what's playing, a timer to stop, and the last note.
+function Notch() {
+  return (
+    <div className="g-notch" aria-hidden="true">
+      <div className="bar">
+        <b>F2</b>
+        <span>File</span>
+        <span>Edit</span>
+        <span>View</span>
+        <span className="clock">9:41</span>
+      </div>
+      <div className="island">
+        <div className="song">
+          <i className="art" />
+          <div className="words">
+            <b>Northern Lights</b>
+            <span>Aurora Hall</span>
+          </div>
+          <div className="keys">
+            <svg viewBox="0 0 24 24">
+              <path d="M11 6 3 12l8 6zM21 6l-8 6 8 6z" />
+            </svg>
+            <svg viewBox="0 0 24 24">
+              <rect x="6" y="5" width="4" height="14" rx="1" />
+              <rect x="14" y="5" width="4" height="14" rx="1" />
+            </svg>
+            <svg viewBox="0 0 24 24">
+              <path d="m3 6 8 6-8 6zM13 6l8 6-8 6z" />
+            </svg>
+          </div>
+        </div>
+        <div className="going">
+          <svg viewBox="0 0 24 24" className="timer">
+            <circle cx="12" cy="13.5" r="7.5" />
+            <path d="M12 13.5V9M10 3.5h4" />
+          </svg>
+          <b>Tea</b>
+          <em>4:12</em>
+          <svg viewBox="0 0 24 24" className="stop">
+            <path d="m9 9 6 6m0-6-6 6" />
+          </svg>
+        </div>
+        <div className="note">
+          <svg viewBox="0 0 24 24" className="tile">
+            <path d="m7 12.5 3.5 3.5L17 9" />
+          </svg>
+          <div className="words">
+            <b>Copied</b>
+            <span>1,204 characters</span>
+          </div>
+          <small>Now</small>
+        </div>
       </div>
     </div>
   )

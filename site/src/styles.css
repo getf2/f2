@@ -1456,6 +1456,170 @@ h1 {
   }
 }
 
+/* The notch opened, as F2 draws it: black, hanging from under the menu bar,
+   its top corners flared into the screen's edge. One unit (u) for all of it,
+   bigger on a narrow plate. */
+.g-notch {
+  --u: 1cqw;
+  position: absolute;
+  inset: 0;
+  color: #fff;
+  font-size: calc(var(--u) * 1.3);
+}
+@container (max-width: 640px) {
+  .g-notch {
+    --u: 1.6cqw;
+  }
+}
+@container (max-width: 440px) {
+  .g-notch {
+    --u: 2.1cqw;
+  }
+  .g-notch .bar > * {
+    visibility: hidden;
+  }
+}
+.g-notch .bar {
+  position: absolute;
+  inset: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 2.2);
+  height: calc(var(--u) * 3.4);
+  padding: 0 calc(var(--u) * 2.4);
+  font-size: calc(var(--u) * 1.25);
+  font-weight: 500;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  background: rgba(10, 20, 50, 0.18);
+  backdrop-filter: blur(12px);
+}
+.g-notch .bar b {
+  font-weight: 700;
+}
+.g-notch .clock {
+  margin-left: auto;
+}
+.g-notch .island {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  translate: -50% 0;
+  width: calc(var(--u) * 44);
+  padding: calc(var(--u) * 4.4) calc(var(--u) * 2) calc(var(--u) * 1.2);
+  background: #000;
+  border-radius: 0 0 calc(var(--u) * 2.4) calc(var(--u) * 2.4);
+  box-shadow: 0 calc(var(--u) * 1.4) calc(var(--u) * 4) rgba(0, 0, 0, 0.45);
+}
+/* Its flared top corners. */
+.g-notch .island::before,
+.g-notch .island::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  width: calc(var(--u) * 0.8);
+  height: calc(var(--u) * 0.8);
+}
+.g-notch .island::before {
+  right: 100%;
+  background: radial-gradient(circle at 0 100%, transparent 70%, #000 71%);
+}
+.g-notch .island::after {
+  left: 100%;
+  background: radial-gradient(circle at 100% 100%, transparent 70%, #000 71%);
+}
+.g-notch .island > div {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 1.2);
+}
+.g-notch .island > div + div {
+  margin-top: calc(var(--u) * 0.9);
+  padding-top: calc(var(--u) * 0.9);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+.g-notch .words {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+  line-height: 1.25;
+}
+.g-notch .words b {
+  font-weight: 600;
+}
+.g-notch .words span {
+  color: rgba(255, 255, 255, 0.6);
+}
+.g-notch .art {
+  flex: none;
+  width: calc(var(--u) * 5);
+  height: calc(var(--u) * 5);
+  border-radius: calc(var(--u) * 0.8);
+  background:
+    radial-gradient(circle at 30% 25%, #9fe3c6 0, transparent 45%),
+    linear-gradient(150deg, #3b7bd8, #6b4bb8 60%, #1b2350);
+}
+.g-notch .song .words {
+  font-size: calc(var(--u) * 1.4);
+}
+.g-notch .keys {
+  display: flex;
+  gap: calc(var(--u) * 1.4);
+  padding-right: calc(var(--u) * 0.4);
+}
+.g-notch svg {
+  flex: none;
+  width: calc(var(--u) * 1.8);
+  height: calc(var(--u) * 1.8);
+  fill: #fff;
+}
+.g-notch .going b {
+  flex: 1;
+  font-weight: 600;
+}
+.g-notch .going em {
+  font-style: normal;
+  font-weight: 700;
+  font-size: calc(var(--u) * 1.5);
+  font-variant-numeric: tabular-nums;
+  color: #ff9f0a;
+}
+.g-notch .timer {
+  fill: none;
+  stroke: #ff9f0a;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+}
+.g-notch .stop {
+  width: calc(var(--u) * 2.2);
+  height: calc(var(--u) * 2.2);
+  fill: none;
+  stroke: #000;
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.55);
+}
+.g-notch .tile {
+  width: calc(var(--u) * 2.6);
+  height: calc(var(--u) * 2.6);
+  padding: calc(var(--u) * 0.45);
+  fill: none;
+  stroke: #fff;
+  stroke-width: 2.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  border-radius: calc(var(--u) * 0.7);
+  background: #30d158;
+}
+.g-notch .note .words span {
+  font-size: calc(var(--u) * 1.15);
+}
+.g-notch .note small {
+  align-self: flex-start;
+  font-size: calc(var(--u) * 1.1);
+  color: rgba(255, 255, 255, 0.4);
+}
+
 /* The changelog: each release's version stays put beside what it brought. */
 .releases {
   width: var(--wrap);

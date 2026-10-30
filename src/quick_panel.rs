@@ -1486,6 +1486,16 @@ fn now_playing_rows() -> Vec<Item> {
         }
         Now::Stopped(player) => vec![row("Nothing's Playing".into(), format!("{} is open: Return plays", player.name()), "Music", music, commands::Run::Music(player, Do::Resume))],
         Now::NotOpen => vec![row("Nothing's Playing".into(), "Music and Spotify aren't open: Return opens Music".into(), "Music", music, commands::Run::Url("file:///System/Applications/Music.app".into()))],
+        Now::Failed(player) => vec![row(
+            format!("Couldn't Ask {} What's Playing", player.name()),
+            format!("Return opens {}", player.name()),
+            "Music",
+            music,
+            match player.app() {
+                Some(app) => commands::Run::Url(format!("file://{}", app.display())),
+                None => commands::Run::Music(player, Do::PlayPause),
+            },
+        )],
         Now::Ask(player) => vec![row(format!("Show What's Playing in {}", player.name()), format!("{} asks {} (macOS asks you once)", crate::APP_NAME, player.name()), "Music", music, commands::Run::MusicAccess(player))],
         Now::Denied(player) => vec![row(
             format!("{} Can't Ask {}", crate::APP_NAME, player.name()),

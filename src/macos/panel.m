@@ -259,3 +259,109 @@ bool nf_hot_key_set(uint32_t id, uint32_t key_code, uint32_t modifiers) {
     EventHotKeyID hot = {'NFhk', id};
     return RegisterEventHotKey(key_code, modifiers, hot, GetApplicationEventTarget(), 0, &hot_keys[id]) == noErr;
 }
+
+// ---- Dragging the panel (by its footer, or its field while it's empty),
+// as Raycast's: past a few points it follows the pointer, snapping to its
+// screen's middle across and to where it opens by default, a guide line
+// across the screen showing each (and a tap on a trackpad that can); kept
+// on its screen with room under it for its tallest list. Where it's left
+// goes to `moved`, as fractions of its screen: its middle across, its top
+// down.
+
+// Snapped within this many points.
+static const CGFloat Snap = 10;
+
+@interface NFGuides : NSView
+@property(nonatomic) CGFloat across; // x of the line down the middle (NAN: none)
+@property(nonatomic) CGFloat down;   // y of the line across (NAN: none)
+@end
+
+@implementation NFGuides
+- (void)drawRect:(__unused NSRect)dirty {
+    [[NSColor.controlAccentColor colorWithAlphaComponent:0.9] setFill];
+    if (!isnan(self.across)) NSRectFill(NSMakeRect(round(self.across) - 0.5, 0, 1, self.bounds.size.height));
+    if (!isnan(self.down)) NSRectFill(NSMakeRect(0, round(self.down) - 0.5, self.bounds.size.width, 1));
+}
+@end
+
+static id dragMonitor;
+static NSPanel *guidePanel;
+static NFGuides *guideView;
+
+// Show the guides on `screen` (NAN: that one not), or neither.
+static void show_guides(NSWindow *over, NSScreen *screen, CGFloat across, CGFloat down) {
+    if (isnan(across) && isnan(down)) {
+        [guidePanel orderOut:nil];
+        return;
+    }
+    if (!guidePanel) {
+        guidePanel = [[NSPanel alloc] initWithContentRect:screen.frame styleMask:NSWindowStyleMaskBorderless | NSWindowStyleMaskNonactivatingPanel backing:NSBackingStoreBuffered defer:NO];
+        guidePanel.opaque = NO;
+        guidePanel.backgroundColor = NSColor.clearColor;
+        guidePanel.ignoresMouseEvents = YES;
+        guidePanel.hasShadow = NO;
+        guidePanel.collectionBehavior = NSWindowCollectionBehaviorCanJoinAllSpaces | NSWindowCollectionBehaviorFullScreenAuxiliary;
+        guideView = [[NFGuides alloc] initWithFrame:NSMakeRect(0, 0, screen.frame.size.width, screen.frame.size.height)];
+        guidePanel.contentView = guideView;
+    }
+    // (Under the panel: the lines run up to its edges.)
+    guidePanel.level = over.level - 1;
+    [guidePanel setFrame:screen.frame display:NO];
+    guideView.frame = NSMakeRect(0, 0, screen.frame.size.width, screen.frame.size.height);
+    guideView.across = across - screen.frame.origin.x;
+    guideView.down = down - screen.frame.origin.y;
+    guideView.needsDisplay = YES;
+    [guidePanel orderFront:nil];
+}
+
+// Start following the pointer, from a press on the panel just now.
+// `tallest`: the most it may grow to; `home`: where its top is by default,
+// as a fraction of its screen's height from the top.
+void nf_panel_drag(void *view, double tallest, double home, void (*moved)(double, double)) {
+    @autoreleasepool {
+        NSWindow *window = [(__bridge NSView *)view window];
+        if (!window || dragMonitor) return;
+        NSPoint pressed = NSEvent.mouseLocation;
+        NSPoint grabbed = NSMakePoint(pressed.x - window.frame.origin.x, pressed.y - NSMaxY(window.frame));
+        __block bool following = false, wasAcross = false, wasDown = false;
+        dragMonitor = [NSEvent addLocalMonitorForEventsMatchingMask:NSEventMaskLeftMouseDragged | NSEventMaskLeftMouseUp
+                                                            handler:^NSEvent *(NSEvent *event) {
+            if (event.type == NSEventTypeLeftMouseUp) {
+                [NSEvent removeMonitor:dragMonitor];
+                dragMonitor = nil;
+                show_guides(window, window.screen, NAN, NAN);
+                NSScreen *screen = window.screen;
+                if (following && screen) {
+                    NSRect s = screen.frame, f = window.frame;
+                    moved((NSMidX(f) - NSMinX(s)) / s.size.width, (NSMaxY(s) - NSMaxY(f)) / s.size.height);
+                }
+                return event;
+            }
+            NSPoint at = NSEvent.mouseLocation;
+            // (A click, so far.)
+            if (!following && hypot(at.x - pressed.x, at.y - pressed.y) < 4) return event;
+            following = true;
+            NSScreen *screen = window.screen ?: NSScreen.mainScreen;
+            for (NSScreen *s in NSScreen.screens) {
+                if (NSPointInRect(at, s.frame)) screen = s;
+            }
+            NSRect s = screen.frame, visible = screen.visibleFrame, f = window.frame;
+            CGFloat x = at.x - grabbed.x, top = at.y - grabbed.y;
+            CGFloat middle = NSMidX(s), homeTop = NSMaxY(s) - home * s.size.height;
+            bool across = fabs(x + f.size.width / 2 - middle) < Snap, down = fabs(top - homeTop) < Snap;
+            if (across) x = middle - f.size.width / 2;
+            if (down) top = homeTop;
+            x = fmin(fmax(x, NSMinX(visible)), NSMaxX(visible) - f.size.width);
+            top = fmin(fmax(top, NSMinY(visible) + tallest), NSMaxY(visible));
+            [window setFrameOrigin:NSMakePoint(x, top - f.size.height)];
+            if ((across && !wasAcross) || (down && !wasDown)) {
+                [NSHapticFeedbackManager.defaultPerformer performFeedbackPattern:NSHapticFeedbackPatternAlignment performanceTime:NSHapticFeedbackPerformanceTimeNow];
+            }
+            wasAcross = across;
+            wasDown = down;
+            show_guides(window, screen, across ? middle : NAN, down ? homeTop : NAN);
+            // (Not GPUI's: the field would select text as it went.)
+            return nil;
+        }];
+    }
+}

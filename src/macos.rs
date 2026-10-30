@@ -88,6 +88,7 @@ unsafe extern "C" {
     fn nf_panel_give_back() -> bool;
     fn nf_in_front() -> bool;
     fn nf_panel_fit(view: *mut std::ffi::c_void, height: f64);
+    fn nf_panel_drag(view: *mut std::ffi::c_void, tallest: f64, home: f64, moved: extern "C" fn(f64, f64));
     fn nf_panel_present(view: *mut std::ffi::c_void);
     fn nf_panel_prepare(view: *mut std::ffi::c_void, radius: f64, height: f64);
     fn nf_screen_with_pointer() -> u32;
@@ -1072,6 +1073,15 @@ pub fn panel_bare(view: *mut std::ffi::c_void) {
 /// Make the panel `height` points tall, its top edge staying put.
 pub fn panel_fit(view: *mut std::ffi::c_void, height: f64) {
     unsafe { nf_panel_fit(view, height) }
+}
+
+/// Drag the panel, from a press on it just now: it follows the pointer
+/// once it's moved a little, snapping to its screen's middle and to `home`
+/// (its top's default, as a fraction of the screen's height), and stays
+/// where there's room for it `tallest`. Where it's left goes to `moved`,
+/// as fractions of its screen (its middle across, its top down).
+pub fn panel_drag(view: *mut std::ffi::c_void, tallest: f32, home: f32, moved: extern "C" fn(f64, f64)) {
+    unsafe { nf_panel_drag(view, tallest as f64, home as f64, moved) }
 }
 
 /// `panel_setup`, for a panel made hidden: `height` points tall, not drawn

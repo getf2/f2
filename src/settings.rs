@@ -356,6 +356,7 @@ pub struct Settings {
     pub lean_drawing: bool,
     pub shots: Shots,
     pub dictation: Dictation,
+    pub notch: Notch,
     /// Extensions in Quick Open (src/extensions.rs, EXTENSIONS.md): on
     /// unless set false, here, by hand. See `extensions_on`.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -505,6 +506,24 @@ impl Default for Dictation {
     }
 }
 
+/// The notch (src/notch.rs): on; notes shown from it (else in the corner);
+/// screens without a notch given one while there's something to show; and
+/// what Music or Spotify is playing beside it.
+#[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
+#[serde(default)]
+pub struct Notch {
+    pub on: bool,
+    pub notes: bool,
+    pub other_screens: bool,
+    pub music: bool,
+}
+
+impl Default for Notch {
+    fn default() -> Self {
+        Notch { on: false, notes: true, other_screens: true, music: true }
+    }
+}
+
 /// How dictation's shortcut is used.
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Default, Serialize, Deserialize)]
 pub enum DictationMode {
@@ -577,6 +596,7 @@ impl Default for Settings {
             lean_drawing: true,
             shots: Shots::default(),
             dictation: Dictation::default(),
+            notch: Notch::default(),
             extensions: None,
             extension_preferences: Default::default(),
             disabled_extensions: Vec::new(),

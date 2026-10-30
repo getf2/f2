@@ -71,8 +71,26 @@ pub fn video(path: PathBuf, frame: Option<PathBuf>, secs: u64, cx: &mut App) {
 }
 
 pub fn note(title: String, detail: String, color: Option<u32>, link: Option<&'static str>, cx: &mut App) {
+    // (From the notch instead, if Settings says so.)
+    if crate::notch::note(&title, &detail, color, kind(&title, link.is_some()), link) {
+        return;
+    }
     let height = if detail.trim().is_empty() { NOTE_SHORT } else { NOTE };
     open(Shown::Note { title: title.into(), detail: detail.into(), color, link }, height, cx);
+}
+
+/// A note's symbol and its tile's color: done, a problem, or just so.
+fn kind(title: &str, linked: bool) -> (&'static str, u32) {
+    let lower = title.to_lowercase();
+    if linked || ["couldn't", "off limits", "didn't", "no ", "not "].iter().any(|w| lower.contains(w)) {
+        ("exclamationmark.triangle.fill", 0xff9f0a)
+    } else if ["copied", "added", "connected", "saved", "allowed", "set", "sound on", "ran ", "done", "stopped", "cancelled"].iter().any(|w| lower.contains(w)) {
+        ("checkmark", 0x30d158)
+    } else if lower.contains("time's up") || lower.contains("alarm") {
+        ("bell.fill", 0xff453a)
+    } else {
+        ("info", 0x0a84ff)
+    }
 }
 
 fn open(shown: Shown, card: f32, cx: &mut App) {
@@ -379,17 +397,7 @@ impl Preview {
     fn render_note(&mut self, window: &mut Window, cx: &mut Context<Self>) -> AnyElement {
         let Shown::Note { title, detail, color, link } = self.shown.clone() else { return div().into_any_element() };
         let palette = self.palette;
-        // (Done, a problem, or just so: its symbol and tile.)
-        let lower = title.to_lowercase();
-        let (name, tile) = if link.is_some() || ["couldn't", "off limits", "didn't", "no ", "not "].iter().any(|w| lower.contains(w)) {
-            ("exclamationmark.triangle.fill", 0xff9f0a)
-        } else if ["copied", "added", "connected", "saved", "allowed", "set", "sound on", "ran ", "done", "stopped", "cancelled"].iter().any(|w| lower.contains(w)) {
-            ("checkmark", 0x30d158)
-        } else if lower.contains("time's up") || lower.contains("alarm") {
-            ("bell.fill", 0xff453a)
-        } else {
-            ("info", 0x0a84ff)
-        };
+        let (name, tile) = kind(&title, link.is_some());
         div()
             .id("note")
             .size_full()

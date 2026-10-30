@@ -50,6 +50,7 @@ mod menus;
 mod music;
 mod natural;
 mod net;
+mod notch;
 mod notes;
 mod passwords;
 mod people;
@@ -246,6 +247,7 @@ fn main() {
         windows::init(cx);
         snippets::init(cx);
         dictation::init(cx);
+        notch::init(cx);
         // Servers over SSH: ssh asks for passwords in F2's dialog (F2 run
         // again, see the top of `main`), and files opened from a server go
         // back when they're saved.

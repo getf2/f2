@@ -101,6 +101,15 @@ Search is [fsearch](https://github.com/noahdunnagan/fsearch), linked in
   mono) and the pill; `src/macos/speech.swift` Apple's SpeechAnalyzer
   (adapted from [Hex](https://github.com/anomalyco/hex)'s, MIT).
 
+## The notch
+
+- `src/notch.rs` what's going on (timers, the stopwatch, recording) and
+  what's playing, sent to the notch, and what's chosen in it;
+  `src/settings_window/notch.rs` its settings.
+- `src/macos/notch.m` the notch itself: a window for each screen, its
+  shape drawn and moved by Core Animation, notes, and what Music and
+  Spotify announce.
+
 ## The app
 
 - `src/settings.rs` settings, `src/settings_window.rs` (and

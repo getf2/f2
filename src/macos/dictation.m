@@ -440,8 +440,17 @@ static void nf_dictation_tick(void) {
     hudBars.needsDisplay = YES;
 }
 
-// Show the pill as `mode` is (0: hidden). On the main thread.
+bool nf_notch_dictation(int32_t mode, uint32_t screen);
+
+// How loud the microphone is now (0 to 1), for the notch's bars.
+float nf_mic_level(void) {
+    return atomic_load(&micLevel);
+}
+
+// Show the pill as `mode` is (0: hidden). On the main thread. (Beside the
+// notch instead, if it's on: see notch.m.)
 void nf_dictation_hud(int32_t mode) {
+    if (nf_notch_dictation(mode, [nf_dictation_screen().deviceDescription[@"NSScreenNumber"] unsignedIntValue])) mode = HudHidden;
     if (mode == HudHidden) {
         if (!hudPanel || hudMode == HudHidden) return;
         hudMode = HudHidden;

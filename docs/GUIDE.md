@@ -260,7 +260,8 @@ alone (Right ⌥ at first; Right ⌘, Fn, a function key) or two together
 listening hands-free until it's pressed again; or, set to Press, it's
 pressed once to start and again to finish. Escape stops, pasting
 nothing; ten minutes is the most. A pill at the bottom of the screen
-moves with your voice, then waves while the words are worked out. Apple's
+(beside the notch, with the notch on) moves with your voice, then waves
+while the words are worked out. Apple's
 speech recognition does that on the Mac (SpeechAnalyzer), in the Mac's
 language or the one picked, macOS downloading its model the first time;
 nothing is sent, and only the last text is kept, for Quick Open's Paste
@@ -270,6 +271,23 @@ microphone's on): then the Mac's own, unless the lid's closed. Settings
 can say Sound settings' input whatever it is, or one microphone. It
 takes the microphone, and Accessibility (to hear the shortcut and
 paste).
+
+**The notch** (Settings > Notch, off at first), as Alcove has it: its
+black grows out to the sides to show a timer counting down, the
+stopwatch, a screen recording, dictation listening, or what Music or
+Spotify is playing (bars moving beside its artwork). F2's notes come down
+from it instead of the corner, and wait while pointed at; a click opens
+what one links to, or puts it away. Pointed at, it opens: what's playing,
+with play, pause and skip (media keys, with Accessibility); all that's
+going on, each with a button to stop it; and the last three notes, each
+with an × to dismiss it. A screen without a notch gets one, from the
+middle of the menu bar, only while there's something to show (or, with
+that off, its notes go to the corner). What's playing is what Music and
+Spotify announce to the Mac as they play; its artwork F2 asks the player
+for when the song changes, only if it may already (as "now playing"
+asks), Spotify's from the address Spotify gives (its own server). It's
+drawn by Core Animation in a window that's clear around it (clicks go
+through), the notch's size while nothing's going on.
 
 **For developers:** "kill port 3000" or "ports" lists what's listening
 (servers: apps and macOS's own only when their port's asked for, and

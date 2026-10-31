@@ -734,7 +734,7 @@ export const CATEGORIES: Category[] = [
     },
     features: [
       { name: 'In the menu bar', text: 'Opens a window, a favorite folder, the search or Disk Usage, and shows your timers and alarms.' },
-      { name: 'A friendly welcome', text: 'Explains what F2 does, and asks for each permission with the reason it needs it.' },
+      { name: 'A friendly welcome', text: 'Explains what F2 does, and asks for each permission with the reason it needs it. If F2 has to reopen for one, it comes back where you were.' },
       { name: 'Settings', text: 'General, Quick Open, Clipboard, Windows, Screenshots, Sidebar, Permissions and more.' },
       {
         name: 'Keyboard shortcuts',

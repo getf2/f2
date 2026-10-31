@@ -19,6 +19,19 @@ export type Release = {
 
 export const RELEASES: Release[] = [
   {
+    version: '0.2.3',
+    date: '2026-10-31',
+    title: 'A clearer welcome',
+    summary: 'The welcome says why F2 asks for each permission, and comes back to where you were when F2 has to reopen for one.',
+    art: { paint: 'meadow', y: '45%' },
+    added: [
+      'The welcome offers the notch, with a note to show it working.',
+      'Reopen F2, right in the welcome, once Full Disk Access or Screen Recording is turned on: macOS lets both work only after F2 reopens.',
+    ],
+    improved: ['The welcome says plainly what each permission is for, and which ones need F2 to reopen.'],
+    fixed: ['The welcome no longer disappears when macOS reopens F2 for a permission: it comes back to the step you were on.'],
+  },
+  {
     version: '0.2.2',
     date: '2026-10-30',
     title: 'The notch, put to work',

@@ -3850,7 +3850,7 @@ dependencies = [
 
 [[package]]
 name = "new-finder"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "alacritty_terminal",
  "cc",

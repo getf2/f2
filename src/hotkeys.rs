@@ -18,6 +18,8 @@ pub const QUICK_OPEN: u32 = 1;
 pub const CLIPBOARD: u32 = 2;
 pub const EMOJI: u32 = 3;
 pub const SELECTION: u32 = 4;
+/// The notch's terminal's.
+pub const TERMINAL: u32 = 5;
 
 static PRESSED: OnceLock<UnboundedSender<u32>> = OnceLock::new();
 /// What each id is set to (kept while suspended, to set again).
@@ -42,6 +44,7 @@ pub fn init(cx: &mut App) {
                 CLIPBOARD => crate::quick_panel::show_mode(crate::quick_panel::Mode::Clipboard, cx),
                 EMOJI => crate::quick_panel::show_mode(crate::quick_panel::Mode::Emoji, cx),
                 SELECTION => crate::quick_panel::show_selected(cx),
+                TERMINAL => crate::terminal::toggle(cx),
                 id => {
                     if !crate::keyboard::pressed(id, cx) && !crate::windows::pressed(id, cx) {
                         crate::shots::pressed(id, cx)

@@ -221,6 +221,19 @@ impl Finder {
         }
     }
 
+    /// The notch's terminal, at the folder selected (else this one's).
+    pub(super) fn open_in_notch_terminal(&mut self, cx: &mut Context<Self>) {
+        let selected = self.selection_paths();
+        let folder = match selected.as_slice() {
+            [one] if one.is_dir() => one.clone(),
+            _ => self.cwd.clone(),
+        };
+        if crate::remote::is_remote(&folder) {
+            return self.show_notice("The notch's terminal is this Mac's: use Open in Terminal for a server.", cx);
+        }
+        cx.defer(move |cx| crate::terminal::open_here(folder, cx));
+    }
+
     pub(super) fn show_menu(&mut self, target: Target, window: &mut Window, cx: &mut Context<Self>) {
         let menu = match target {
             Target::Selection => {

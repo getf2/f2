@@ -1639,6 +1639,17 @@ unsafe extern "C" {
     fn nf_mic_stop(heard: Option<extern "C" fn(*const f32, usize)>);
     fn nf_mic_error() -> *mut c_char;
     fn nf_dictation_hud(mode: i32);
+    // (notch.m's, for the terminal.)
+    fn nf_notch_band(display: u32, width: *mut f64, height: *mut f64);
+    fn nf_terminal_window(view: *mut std::ffi::c_void, display: u32, width: f64, height: f64);
+    // (terminal.m's.)
+    fn nf_terminal_look(iterm2: bool) -> *mut c_char;
+    fn nf_monospace_fonts() -> *mut c_char;
+    fn nf_has_font_family(name: *const c_char) -> bool;
+    fn nf_mouse_pressed() -> bool;
+    // (typing.m's.)
+    fn nf_typing_layout(id: *const c_char) -> *mut c_char;
+    fn nf_typing_listen(heard: Option<extern "C" fn(i32, u16, u64, *mut TypingOut) -> bool>, changed: Option<extern "C" fn(i32, *const c_char)>) -> bool;
     // (notch.m's.)
     fn nf_notch_setup(on: bool, bare: bool, chose: extern "C" fn(i32, i64));
     fn nf_notch_live(json: *const c_char);
@@ -1652,6 +1663,74 @@ unsafe extern "C" {
     fn nf_speech_progress() -> f64;
     fn nf_speech_warm(id: *const c_char);
     fn nf_speech_transcribe(id: *const c_char, samples: *const f32, count: usize, error: *mut *mut c_char) -> *mut c_char;
+}
+
+/// The notch on screen `display`: its width (0: it has none), and how
+/// tall the band at the screen's top is (the notch, else the menu bar).
+pub fn notch_band(display: u32) -> (f32, f32) {
+    let (mut width, mut height) = (0., 0.);
+    unsafe { nf_notch_band(display, &mut width, &mut height) };
+    (width as f32, height as f32)
+}
+
+/// The notch's terminal's window set up: over the menu bar, at the top of
+/// `display`, in its middle, `width` by `height`; on every space.
+pub fn terminal_window(view: *mut std::ffi::c_void, display: u32, width: f32, height: f32) {
+    unsafe { nf_terminal_window(view, display, width as f64, height as f64) }
+}
+
+/// Terminal's default profile's look (or iTerm2's), as JSON (src/macos/
+/// terminal.m's nf_terminal_look).
+pub fn terminal_look(iterm2: bool) -> Option<String> {
+    take(unsafe { nf_terminal_look(iterm2) })
+}
+
+/// The monospaced fonts' families (on any thread).
+pub fn monospace_fonts() -> Vec<String> {
+    take(unsafe { nf_monospace_fonts() }).map(|s| s.lines().map(str::to_string).collect()).unwrap_or_default()
+}
+
+/// Whether a mouse button's held now.
+pub fn mouse_pressed() -> bool {
+    unsafe { nf_mouse_pressed() }
+}
+
+/// Whether a font family of that name is there (quick: not every font
+/// listed, as GPUI's `all_font_names` does).
+pub fn has_font_family(name: &str) -> bool {
+    CString::new(name).is_ok_and(|c| unsafe { nf_has_font_family(c.as_ptr()) })
+}
+
+/// What Typing's tap types in place of a key (src/macos/typing.m's
+/// nf_typing_out): `back` characters taken back (`guard` typed first, if
+/// it isn't 0, and taken back too), then `text`, then the key itself after
+/// all (`key`).
+#[repr(C)]
+pub struct TypingOut {
+    pub back: u32,
+    pub guard: u16,
+    pub length: u32,
+    pub text: [u16; 256],
+    pub key: bool,
+}
+
+/// The keys a keyboard layout types (`id`'s, "com.apple.keylayout.Icelandic";
+/// None: the Mac's own now, if it's a layout for English), as JSON: see
+/// typing.m. On the main thread.
+pub fn typing_layout(id: Option<&str>) -> Option<String> {
+    let id = id.map(|id| CString::new(id).unwrap_or_default());
+    take(unsafe { nf_typing_layout(id.as_ref().map_or(std::ptr::null(), |id| id.as_ptr())) })
+}
+
+/// Hear keys pressed and clicks in any app for Typing (with Accessibility):
+/// `heard` gets each, on a thread of its own (1: a key down; 0: a click; 2:
+/// a key F2 sent itself; its code; the modifiers), true keeping it from the
+/// app and typing what it filled in instead. `changed` hears of the input
+/// source changing (0) and another app coming to the front (1, with its
+/// bundle id: at once too), on the main thread. None: stop. False if it
+/// can't.
+pub fn typing_listen(heard: Option<extern "C" fn(i32, u16, u64, *mut TypingOut) -> bool>, changed: Option<extern "C" fn(i32, *const c_char)>) -> bool {
+    unsafe { nf_typing_listen(heard, changed) }
 }
 
 /// Hear every key in any app (with Accessibility): `heard` gets each, on

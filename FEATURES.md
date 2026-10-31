@@ -308,6 +308,41 @@ more detail.
 - **Paste Last Dictation**, in Quick Open, pastes the last one again.
 - After [Hex](https://github.com/anomalyco/hex)'s dictation, by Kit Langton.
 
+<!-- Typing is in builds but in beta: there only with Settings › Advanced › "Turn on beta features", till it's out. Then take this comment away (and Tab::beta's Typing, and settings' beta gate in typing.rs).
+
+## Typing
+- **Type Icelandic, Korean and English on ABC, without switching** (Settings › Typing, off at first), after [Vikey](https://vikey.app)'s for Vietnamese. As each word ends, it's typed the way that's a word, in whichever language that is. Icelandic and Korean can each be turned off.
+- **Icelandic**: the keys Icelandic has letters on type them when that makes a word ([ for ð, ; for æ, / for þ, - for ö, ' then a vowel for á é í ó ú ý): /a[ becomes það, f;ri færi, Nor[ur-Amer'ika Norður-Ameríka, while don't, and/or, e-mail and a[i] stay as typed. While you're writing Icelandic, the letters show as you type them, where they begin an Icelandic word: /e shows þe, but src/main.rs, km/h and ~/Downloads keep their slashes, and a / beginning a line stays one (for commands). With ⇧: a capital at a word's start, ABC's ? or : after letters.
+- **Korean**: keys as on Korean's 2-Set make Hangul: dkssud becomes 안녕, rkatkgkqslek 감사합니다, zz ㅋㅋ. While you're writing Korean, syllables build up as you type (and Delete takes back a jamo, as 2-Set does); an English word goes back as you finish it. A Korean word has to be said often to win over an English one: so becomes 내 when you're writing Korean, but for never becomes 랙.
+- Every other key types as on ABC, always: ?, @, (, ), 2-3, :). Words only one language has (og, takk, the, 안녕) say which language you're writing in.
+- **Switch by hand** with ⌥Z (or a shortcut you record): English, Icelandic, Korean and round again, for the word you're typing or the one you just typed; words don't switch it back for 5 seconds.
+- **Delete right after** a word switched by itself puts it back as you typed it.
+- Each app keeps its language. In Terminal and code editors it only switches by hand: a[ there is code more often than að. With the Icelandic layout itself (or Korean's input source) chosen in the menu bar, keys are left as they are.
+- It knows every word form in BÍN (3.7 million, from the Árni Magnússon Institute), 115,000 English words and the 200,000 Korean words said most, built in: nothing typed leaves the Mac.
+-->
+
+<!-- The notch's terminal is in builds but in beta: there only with Settings › Advanced › "Turn on beta features", till it's out. Then take this comment away (and Tab::beta's Terminal, and `terminal::available`'s beta).
+
+## The notch's terminal
+- **A terminal that comes down from the notch** (Settings › Terminal), as Guake's and Yakuake's came down on Linux, and Ghostty's quick terminal: ⌃` (or a shortcut you record) brings it down, the notch's black growing out into it, and takes it back up. On the screen you're on; screens without a notch get it from the top of the screen.
+- **Your shell, as you left it**: it goes on while the terminal's away. exit ends it; the next time, a new one starts.
+- **Tabs, in the notch's black** beside the notch: ⌘T opens one in the same folder, ⌘W closes it, ⌘1… and ⌘⇧[ ⌘⇧] (or ⌃⇥) go between them. Each is named for what it's running (as the program names itself), else its folder.
+- **⌘-click to open**: links (and those programs make, OSC 8), and files and folders a program printed, from where it runs (`src/main.rs:42`, `~/Downloads`, git's `a/` and `b/`): links in your browser, folders in an F2 window, files in their app (anything that would run is shown in F2 instead). Held ⌘ underlines what it'd open.
+- **The mouse for programs that ask for it** (vim, htop, tmux, lazygit: clicks, drags, the wheel); ⇧ selects anyway.
+- **⌘F finds** in the terminal and what's gone by, every one marked; ↩ and ⇧↩ go between them. **⌘K clears**, ⌘+ ⌘− ⌘0 size the text, ⌘A selects all, and a right-click has it all in a menu.
+- **Drop files on it** to type their paths (quoted); a drag from F2 or Finder doesn't put it away. **⌘O opens the shell's folder in F2**, and File › Open Here in the Notch's Terminal cds there (or, if the shell's busy, opens a tab there).
+- Your Nerd Font's symbols, after the font you chose, so prompts' icons (starship's, powerlevel10k's) show.
+- **Its look, yours** (Settings › Terminal › Look, with a preview): 286 themes it comes with (iTerm2-Color-Schemes', as Ghostty's are), searchable, each shown in its colors; any font on your Mac that's monospaced and its size; a block, bar or underline cursor, blinking or not; a see-through background; and how wide and tall it comes down.
+- **Import from Ghostty, Terminal, iTerm2, Alacritty, Kitty or WezTerm** (those on your Mac): its colors become a theme of yours, named for it, with its font, size, cursor and background, where it says. Ghostty's config and the theme it names, Terminal's and iTerm2's default profile, Alacritty's TOML and what it imports, Kitty's config and what it includes, WezTerm's color scheme.
+- **Themes of your own**: make one from any theme, change any of its colors (the 16 programs choose from, background, text, cursor, selection), rename it, delete it.
+- Box drawing (Claude Code's box, htop's, tmux's) is drawn as lines that meet, and Hangul and kanji fill their two cells, as Ghostty draws them. ⇧↩ types a new line (in Claude Code's prompt).
+- **Put away when you click elsewhere**, or only with the shortcut (Settings).
+- **Starts in** your home folder, F2's front window's folder, or a folder you choose; **File › Open Here in the Notch's Terminal** takes it to a window's folder (or the folder selected) at any time.
+- Drag to select, ⌘C to copy, ⌘V to paste (bracketed, so a shell doesn't run it line by line); scroll back through what's gone by. Full-screen programs (vim, less, top) work, and Korean's input method composes in it.
+- Typing (Icelandic, Korean) treats it as a terminal: English, unless you switch by hand.
+- Built on alacritty_terminal (Zed's terminal's, too), drawn by F2 itself: no Ghostty needed, nothing more to install.
+-->
+
 ## The notch
 - **What's going on, in the notch**, like Alcove (Settings › Notch, off at first): the black of the notch grows out to the sides to show a timer counting down, the stopwatch, a screen recording, dictation listening, or what Music or Spotify is playing (its artwork, once F2 may ask the app, and bars that move while it plays).
 - **Notes come down from it** instead of the corner: a timer done, text copied, a permission missing. Click one to open what it links to.
@@ -353,6 +388,8 @@ more detail.
   - Each with a reason and a button.
   - Optional: Calendar, Reminders and the Do Not Disturb shortcut, for Quick Open.
   - It also lets you pick Quick Open's shortcut, points out shortcuts that clash, offers window shortcuts, and suggests things to try.
+  - Offers the notch (off at first), with a note to show it working.
+  - Says why each permission is needed. Full Disk Access and Screen Recording work only once F2 reopens: Reopen F2 does it, and the welcome comes back to the step it was on (after macOS's own Quit & Reopen too).
 - **Settings › Permissions** lists all of them, plus Calendar, Reminders, Contacts and the microphone. macOS also asks, the first time each is used, to let F2 control Notes, use Bluetooth, and (only to tell which Wi-Fi network you're on) know your location.
 - **Settings**: General, Quick Open, Quicklinks, Snippets, Clipboard, Dictation, Windows, Screenshots, Sidebar, Advanced, Permissions. ⌘, only ever opens one Settings window.
 - **Updates**: Sparkle, from download.getf2.com, with a notarized DMG laid out for dragging F2 into Applications.

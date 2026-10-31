@@ -56,6 +56,11 @@ pub fn menu_bar(cx: &mut App) {
             MenuItem::action("New Tab", NewTab),
             MenuItem::action("Open", OpenSelected),
             MenuItem::action("Open in Terminal", OpenInTerminal),
+        ]
+        .into_iter()
+        // (The notch's terminal's, while it's there: it's in beta.)
+        .chain(crate::terminal::available(cx).then(|| MenuItem::action("Open Here in the Notch's Terminal", OpenInNotchTerminal)))
+        .chain([
             MenuItem::action("Open in Editor", OpenInEditor),
             MenuItem::action("Close Window", CloseTab),
             MenuItem::separator(),
@@ -76,7 +81,7 @@ pub fn menu_bar(cx: &mut App) {
             MenuItem::separator(),
             MenuItem::action("Find", FocusSearch),
             MenuItem::action("Quick Open…", QuickOpen),
-        ]),
+        ])),
         Menu::new("Edit").items([
             MenuItem::os_action("Undo", Undo, OsAction::Undo),
             MenuItem::os_action("Redo", Redo, OsAction::Redo),

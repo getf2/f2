@@ -38,6 +38,7 @@ actions!(
         FocusSearch,
     QuickOpen,
     OpenInTerminal,
+    OpenInNotchTerminal,
     OpenInEditor,
         SearchTips,
         ClearSearch,
@@ -302,6 +303,7 @@ impl Finder {
                 cx.defer(move |cx| crate::quick_panel::show(Some(origin), cx));
             }))
             .on_action(cx.listener(|this, _: &OpenInTerminal, _, cx| this.open_in(crate::tools::Kind::Terminal, cx)))
+            .on_action(cx.listener(|this, _: &OpenInNotchTerminal, _, cx| this.open_in_notch_terminal(cx)))
             .on_action(cx.listener(|this, _: &OpenInEditor, _, cx| this.open_in(crate::tools::Kind::Editor, cx)))
             .on_action(cx.listener(|this, _: &FocusSearch, window, cx| this.focus_search(window, cx)))
             .on_action(cx.listener(|this, _: &SearchTips, window, cx| this.show_search_tips(window, cx)))

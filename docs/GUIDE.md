@@ -480,8 +480,11 @@ Access, Accessibility, Screen Recording, the clipboard), each with why
 and a button, turning green as they're allowed; the calendar, Reminders
 and the Do Not Disturb shortcut, for Quick Open, if you'd like them; the
 shortcuts (Quick Open's, those in the way: Spotlight's ⌘Space, macOS's
-screenshot keys) and a set of window shortcuts; and things to try, with
-Open at Login.
+screenshot keys) and a set of window shortcuts; the notch, off at first,
+with a note to show it; and things to try, with Open at Login. Full Disk
+Access and Screen Recording work only once F2 reopens: its Reopen F2 does
+that, and the welcome comes back to the step it was on (after macOS's own
+Quit & Reopen too).
 
 **Keyboard shortcuts**, all in one place: Settings > Keyboard (or
 "keyboard shortcuts" in Quick Open) lists every shortcut, to search and

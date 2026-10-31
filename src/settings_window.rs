@@ -17,6 +17,8 @@ mod dictation;
 mod extensions;
 mod folder_rules;
 mod notch;
+mod terminal;
+mod typing;
 pub use extensions::{new_extension, open_extension};
 pub use folder_rules::open_for as open_rules_for;
 
@@ -36,8 +38,8 @@ pub fn open_quick_open(cx: &mut App) {
 }
 
 /// Settings, at a section: "snippets", "quicklinks", "windows",
-/// "search", "rules", "screenshots", "dictation", "notch" (else
-/// General).
+/// "search", "rules", "screenshots", "dictation", "typing", "notch"
+/// (else General).
 pub fn open_at(section: &str, cx: &mut App) {
     let tab = match section {
         "snippets" => Tab::Snippets,
@@ -49,6 +51,8 @@ pub fn open_at(section: &str, cx: &mut App) {
         "rules" => Tab::Rules,
         "screenshots" => Tab::Screenshots,
         "dictation" => Tab::Dictation,
+        "typing" => Tab::Typing,
+        "terminal" => Tab::Terminal,
         "notch" => Tab::Notch,
         _ => Tab::General,
     };
@@ -118,6 +122,8 @@ enum Tab {
     Snippets,
     Clipboard,
     Dictation,
+    Typing,
+    Terminal,
     Notch,
     Windows,
     Screenshots,
@@ -140,6 +146,8 @@ enum Recording {
     Clipboard,
     Emoji,
     Selection,
+    Typing,
+    Terminal,
     Window(crate::windows::Place),
     Key(SharedString),
     InApp(&'static str),
@@ -166,7 +174,7 @@ impl Recording {
 
     /// Everything a shortcut can be for, as Settings have them.
     fn all(s: &Settings) -> Vec<Recording> {
-        [Recording::QuickOpen, Recording::Clipboard, Recording::Emoji, Recording::Selection]
+        [Recording::QuickOpen, Recording::Clipboard, Recording::Emoji, Recording::Selection, Recording::Typing, Recording::Terminal]
             .into_iter()
             .chain(crate::shots::Action::ALL.into_iter().map(Recording::Shot))
             .chain(crate::windows::Place::ALL.into_iter().map(Recording::Window))
@@ -182,6 +190,8 @@ impl Recording {
             Recording::Clipboard => s.clipboard_shortcut.clone(),
             Recording::Emoji => s.emoji_shortcut.clone(),
             Recording::Selection => s.selection_shortcut.clone(),
+            Recording::Typing => s.typing.shortcut.clone(),
+            Recording::Terminal => s.quick_terminal.shortcut.clone(),
             Recording::Window(place) => s.window_shortcuts.get(place.key()).cloned(),
             Recording::Key(what) => s.shortcuts.get(what.as_ref()).cloned(),
             Recording::InApp(name) => crate::keymap::keys(name, s).first().cloned(),
@@ -203,6 +213,8 @@ impl Recording {
             Recording::Clipboard => s.clipboard_shortcut = shortcut,
             Recording::Emoji => s.emoji_shortcut = shortcut,
             Recording::Selection => s.selection_shortcut = shortcut,
+            Recording::Typing => s.typing.shortcut = shortcut,
+            Recording::Terminal => s.quick_terminal.shortcut = shortcut,
             Recording::Window(place) => match shortcut {
                 Some(shortcut) => _ = s.window_shortcuts.insert(place.key().into(), shortcut),
                 None => _ = s.window_shortcuts.remove(place.key()),
@@ -276,6 +288,8 @@ struct SettingsWindow {
     in_app: bool,
     adding: Vec<PathBuf>,
     icons: crate::icons::Icons,
+    /// Terminal's Look section's.
+    look: terminal::Look,
     _subscriptions: Vec<Subscription>,
 }
 
@@ -302,6 +316,8 @@ impl Tab {
             Tab::Snippets => ("Snippets", "text.quote", crate::commands::SNIPPETS),
             Tab::Clipboard => ("Clipboard", "doc.on.clipboard", crate::commands::CLIPBOARD),
             Tab::Dictation => ("Dictation", "mic.fill", crate::dictation::COLOR),
+            Tab::Typing => ("Typing", "keyboard", crate::typing::COLOR),
+            Tab::Terminal => ("Terminal", "terminal.fill", 0x1d1d1f),
             Tab::Notch => ("Notch", "macbook", 0x1d1d1f),
             Tab::Windows => ("Windows", "macwindow.on.rectangle", crate::commands::WINDOWS),
             Tab::Screenshots => ("Screenshots", "camera.viewfinder", crate::commands::SCREENSHOTS),
@@ -314,7 +330,12 @@ impl Tab {
         }
     }
 
-    const ALL: [Tab; 16] = [
+    /// Not finished yet: there with Settings' beta features on.
+    fn beta(self) -> bool {
+        matches!(self, Tab::Typing | Tab::Terminal)
+    }
+
+    const ALL: [Tab; 18] = [
         Tab::General,
         Tab::QuickOpen,
         Tab::Keyboard,
@@ -322,6 +343,8 @@ impl Tab {
         Tab::Snippets,
         Tab::Clipboard,
         Tab::Dictation,
+        Tab::Typing,
+        Tab::Terminal,
         Tab::Notch,
         Tab::Windows,
         Tab::Screenshots,
@@ -332,6 +355,11 @@ impl Tab {
         Tab::Advanced,
         Tab::Permissions,
     ];
+}
+
+/// "Beta", beside what isn't finished yet.
+fn beta_tag(palette: &Palette) -> Div {
+    div().px(px(5.)).rounded(px(4.)).border_1().border_color(palette.glass_border).text_size(px(10.)).text_color(palette.secondary).child("Beta")
 }
 
 /// A white symbol on a tile (System Settings' look).
@@ -415,6 +443,7 @@ impl SettingsWindow {
             in_app: false,
             adding: Vec::new(),
             icons,
+            look: Default::default(),
             _subscriptions: subscriptions,
         }
     }
@@ -759,6 +788,7 @@ impl SettingsWindow {
         let on = what.is_some();
         self.recording = what;
         crate::hotkeys::suspend(on);
+        crate::typing::suspend(on);
         crate::keymap::suspend(on, cx);
         if on {
             window.focus(&self.focus, cx);
@@ -1877,6 +1907,8 @@ impl Render for SettingsWindow {
             Tab::Keyboard => self.render_keyboard(&settings, window, cx),
             Tab::Clipboard => self.render_clipboard(&settings, window, cx),
             Tab::Dictation => self.render_dictation(&settings, window, cx),
+            Tab::Typing => self.render_typing(&settings, window, cx),
+            Tab::Terminal => self.render_terminal(&settings, window, cx),
             Tab::Notch => self.render_notch(&settings, window),
             Tab::Quicklinks => self.render_quicklinks(&settings, window, cx),
             Tab::Permissions => div()
@@ -1963,6 +1995,15 @@ impl Render for SettingsWindow {
                         .text_color(palette.secondary)
                         .child("About 15 MB less for each big window. If scrolling stutters, turn it off."),
                 )
+                .child(heading("Beta:"))
+                .child(check("beta", "Turn on beta features".into(), settings.beta, |s| s.beta = !s.beta, window))
+                .child(
+                    div()
+                        .pl(px(24.))
+                        .text_size(px(11.))
+                        .text_color(palette.secondary)
+                        .child("What isn't finished yet, to try: Typing (Icelandic, Korean and English on ABC, without switching), and a terminal that comes down from the notch. Each has its own place in Settings, marked Beta. They may change, or go."),
+                )
                 .into_any_element(),
         };
         div()
@@ -1989,8 +2030,9 @@ impl Render for SettingsWindow {
                     .border_r_1()
                     .border_color(palette.sidebar_border)
                     // (Extensions only once they're on.)
-                    // (Dictation only where it works: macOS 26.)
-                    .children(Tab::ALL.into_iter().filter(|t| (*t != Tab::Extensions || settings.extensions_on()) && (*t != Tab::Dictation || crate::dictation::available())).map(|t| {
+                    // (Dictation only where it works: macOS 26. What's in
+                    // beta only with beta features on.)
+                    .children(Tab::ALL.into_iter().filter(|t| (*t != Tab::Extensions || settings.extensions_on()) && (*t != Tab::Dictation || crate::dictation::available()) && (!t.beta() || settings.beta)).map(|t| {
                         let (label, name, color) = t.about();
                         div()
                             .id(("section", t as usize))
@@ -2003,6 +2045,7 @@ impl Render for SettingsWindow {
                             .when(self.tab == t, |d| d.bg(palette.glass_selected))
                             .child(tile(name, color, window))
                             .child(label)
+                            .when(t.beta(), |d| d.child(beta_tag(&palette)))
                             .on_click(cx.listener(move |this, _, _, cx| {
                                 this.tab = t;
                                 this.editing = None;
@@ -2017,7 +2060,17 @@ impl Render for SettingsWindow {
                     .min_w_0()
                     .flex()
                     .flex_col()
-                    .child(div().px_6().pt_4().pb_1().text_size(px(20.)).font_weight(FontWeight::SEMIBOLD).child(self.tab.about().0))
+                    .child(
+                        div()
+                            .px_6()
+                            .pt_4()
+                            .pb_1()
+                            .flex()
+                            .items_center()
+                            .gap_2()
+                            .child(div().text_size(px(20.)).font_weight(FontWeight::SEMIBOLD).child(self.tab.about().0))
+                            .when(self.tab.beta(), |d| d.child(beta_tag(&palette))),
+                    )
                     // (A long section scrolls.)
                     .child(div().id("body").flex_1().min_h_0().overflow_y_scroll().px_6().pb_4().child(body)),
             )

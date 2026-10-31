@@ -349,6 +349,10 @@ pub struct Settings {
     pub snippet_expansion: bool,
     /// The welcome's been shown.
     pub onboarded: bool,
+    /// The welcome's step while it's open (None: closed, or done): F2 quit
+    /// with it open (macOS reopening F2 for a permission it applies only
+    /// then) opens it there again.
+    pub welcome_step: Option<usize>,
     /// Windows show two panes (the last window's choice).
     pub dual_pane: bool,
     /// Windows keep two frames for drawing, not GPUI's three: a full-size
@@ -356,6 +360,11 @@ pub struct Settings {
     pub lean_drawing: bool,
     pub shots: Shots,
     pub dictation: Dictation,
+    /// What isn't finished yet is there to try (Settings › Advanced): now
+    /// Typing (Icelandic and Korean).
+    pub beta: bool,
+    pub typing: Typing,
+    pub quick_terminal: QuickTerminal,
     pub notch: Notch,
     /// Extensions in Quick Open (src/extensions.rs, EXTENSIONS.md): on
     /// unless set false, here, by hand. See `extensions_on`.
@@ -506,6 +515,118 @@ impl Default for Dictation {
     }
 }
 
+/// Typing Icelandic and Korean on ABC (src/typing.rs): on (in beta: with
+/// `beta` too), the languages it types besides English, and the shortcut
+/// that switches by hand ("alt-z"; None: none).
+#[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
+#[serde(default)]
+pub struct Typing {
+    pub on: bool,
+    pub icelandic: bool,
+    pub korean: bool,
+    pub shortcut: Option<String>,
+}
+
+impl Default for Typing {
+    fn default() -> Self {
+        Typing { on: false, icelandic: true, korean: false, shortcut: Some(crate::typing::DEFAULT_SHORTCUT.into()) }
+    }
+}
+
+/// The notch's terminal (src/terminal.rs; in beta: with `beta` too): on,
+/// the shortcut that brings it down and back up ("ctrl-`"; None: none),
+/// whether a click elsewhere puts it away, where its shell starts, how it
+/// looks, and themes of your own (imported from another terminal, or made
+/// here).
+#[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
+#[serde(default)]
+pub struct QuickTerminal {
+    pub on: bool,
+    pub shortcut: Option<String>,
+    pub hide_on_click_away: bool,
+    pub start: TerminalStart,
+    /// The folder, for `TerminalStart::Folder`.
+    pub folder: Option<PathBuf>,
+    pub look: TerminalLook,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub themes: Vec<TerminalTheme>,
+}
+
+impl Default for QuickTerminal {
+    fn default() -> Self {
+        QuickTerminal {
+            on: true,
+            shortcut: Some("ctrl-`".into()),
+            hide_on_click_away: true,
+            start: TerminalStart::Home,
+            folder: None,
+            look: TerminalLook::default(),
+            themes: Vec::new(),
+        }
+    }
+}
+
+/// How the notch's terminal looks: its theme (one it comes with, by name,
+/// or one of `QuickTerminal::themes`), its font (None: JetBrains Mono, else
+/// SF Mono, else Menlo) and size, its background's opacity, its cursor,
+/// and how much of the screen it takes.
+#[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
+#[serde(default)]
+pub struct TerminalLook {
+    pub theme: String,
+    pub font_family: Option<String>,
+    pub font_size: f32,
+    pub opacity: f32,
+    pub cursor: TerminalCursor,
+    pub blink: bool,
+    pub width: f32,
+    pub height: f32,
+}
+
+impl Default for TerminalLook {
+    fn default() -> Self {
+        TerminalLook { theme: "Carbonfox".into(), font_family: None, font_size: 13., opacity: 1., cursor: TerminalCursor::Block, blink: false, width: 0.62, height: 0.48 }
+    }
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Default, Serialize, Deserialize)]
+pub enum TerminalCursor {
+    #[default]
+    Block,
+    Bar,
+    Underline,
+}
+
+/// A terminal theme of your own: its name, and colors as "#rrggbb" (the 16
+/// of the palette; cursor and selection's, if it has them).
+#[derive(Clone, PartialEq, Debug, Default, Serialize, Deserialize)]
+#[serde(default)]
+pub struct TerminalTheme {
+    pub name: String,
+    pub background: String,
+    pub foreground: String,
+    pub palette: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cursor: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cursor_text: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub selection: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub selected_text: Option<String>,
+}
+
+/// Where the notch's terminal's shell starts.
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Default, Serialize, Deserialize)]
+pub enum TerminalStart {
+    #[default]
+    Home,
+    /// The folder in F2's front window (else home).
+    Window,
+    /// A folder chosen in Settings.
+    Folder,
+}
+
 /// The notch (src/notch.rs): on; notes shown from it (else in the corner);
 /// screens without a notch given one while there's something to show; and
 /// what Music or Spotify is playing beside it.
@@ -592,10 +713,14 @@ impl Default for Settings {
             snippets: snippets(),
             snippet_expansion: true,
             onboarded: false,
+            welcome_step: None,
             dual_pane: false,
             lean_drawing: true,
             shots: Shots::default(),
             dictation: Dictation::default(),
+            beta: false,
+            typing: Typing::default(),
+            quick_terminal: QuickTerminal::default(),
             notch: Notch::default(),
             extensions: None,
             extension_preferences: Default::default(),
@@ -775,5 +900,13 @@ mod tests {
         assert!(flags.iter().enumerate().all(|(i, f)| flags.iter().skip(i + 1).all(|g| g != f)), "each its own keys");
         // (⌃ ⌥ ⌘ as CGEventFlags has them.)
         assert_eq!(DragKeys::ControlCommand.flags(), 0x40000 | 0x100000);
+    }
+
+    #[test]
+    fn beta_off_at_first() {
+        let read = |json: &str| serde_json::from_str::<Settings>(json).unwrap();
+        assert!(!read("{}").beta);
+        let mine = read(r#"{"beta": true, "typing": {"on": true}}"#);
+        assert!(mine.beta && mine.typing.icelandic && !mine.typing.korean, "Icelandic as it was, Korean when it's asked for");
     }
 }

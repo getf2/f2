@@ -80,10 +80,12 @@ mod status_item;
 mod sun;
 mod style;
 mod takeover;
+mod terminal;
 mod tidy;
 mod this_mac;
 mod timers;
 mod tracking;
+mod typing;
 mod unfinished;
 mod toggles;
 mod tools;
@@ -247,7 +249,14 @@ fn main() {
         windows::init(cx);
         snippets::init(cx);
         dictation::init(cx);
+        typing::init(cx);
         notch::init(cx);
+        terminal::init(cx);
+    // (F2_SETTINGS=terminal: Settings open at launch, at that section, for
+    // trying it in a test copy.)
+    if let Ok(section) = std::env::var("F2_SETTINGS") {
+        cx.defer(move |cx| settings_window::open_at(&section, cx));
+    }
         // Servers over SSH: ssh asks for passwords in F2's dialog (F2 run
         // again, see the top of `main`), and files opened from a server go
         // back when they're saved.
@@ -293,7 +302,8 @@ fn main() {
         // a folder was asked for: then that, the welcome over it). Else a
         // window, unless Settings say not to (and nothing was asked for):
         // then F2 starts in the menu bar, not in front.
-        let welcome = !settings::Settings::get(cx).onboarded;
+        // (Or it was open when F2 quit: macOS reopening F2 for a permission.)
+        let welcome = !settings::Settings::get(cx).onboarded || settings::Settings::get(cx).welcome_step.is_some();
         let window = settings::Settings::get(cx).open_window_at_launch;
         let mut shown = true;
         if pending.is_empty() && start.is_none() && welcome {

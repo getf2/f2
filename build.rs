@@ -33,6 +33,8 @@ fn main() {
         "src/macos/system.m",
         "src/macos/dictation.m",
         "src/macos/notch.m",
+        "src/macos/typing.m",
+        "src/macos/terminal.m",
     ];
     for source in sources {
         println!("cargo:rerun-if-changed={source}");

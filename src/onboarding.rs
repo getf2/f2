@@ -4,7 +4,10 @@
 //! permissions most of it needs, each turning green as it's allowed; the
 //! calendar, Reminders and Do Not Disturb for Quick Open, if they're
 //! wanted; the shortcuts (Quick Open's, Spotlight's ⌘Space, macOS's
-//! screenshot keys, window shortcuts at a click); and some things to try.
+//! screenshot keys, window shortcuts at a click); the notch, if it's
+//! wanted (it's off at first); and some things to try. Its step is kept
+//! while it's open: macOS reopens F2 for Full Disk Access and Screen
+//! Recording (or the welcome's own Reopen F2 does), and it comes back there.
 
 use std::sync::{Arc, OnceLock};
 use std::time::Duration;
@@ -17,8 +20,9 @@ use crate::permissions::Permission;
 use crate::settings::Settings;
 use crate::style::{GEIST, MEDIUM, SEMIBOLD, symbol};
 
-const STEPS: usize = 5;
+const STEPS: usize = 6;
 const YOUR_DAY: usize = 2;
+const NOTCH: usize = 4;
 
 /// The website's colors: ink on paper, the sky's blues.
 const INK: u32 = 0x0d1726;
@@ -66,16 +70,21 @@ pub fn open(cx: &mut App) {
     {
         return;
     }
-    // (Shown once: closed early, it's still been seen.)
-    Settings::update(cx, |s| s.onboarded = true);
-    let bounds = Bounds::centered(None, size(px(920.), px(640.)), cx);
+    // (Shown once: closed early, it's still been seen. Where it was, if F2
+    // quit with it open.)
+    let step = Settings::get(cx).welcome_step.unwrap_or(0).min(STEPS - 1);
+    Settings::update(cx, |s| {
+        s.onboarded = true;
+        s.welcome_step = Some(step);
+    });
+    let bounds = Bounds::centered(None, size(px(920.), px(680.)), cx);
     let options = WindowOptions {
         window_bounds: Some(WindowBounds::Windowed(bounds)),
         titlebar: Some(TitlebarOptions { title: Some(format!("Welcome to {}", crate::APP_NAME).into()), appears_transparent: true, traffic_light_position: Some(point(px(18.), px(18.))) }),
         is_resizable: false,
         ..Default::default()
     };
-    if let Ok((handle, _)) = gpui_kit::open_window(options, cx, |window, cx| cx.new(|cx| Onboarding::new(window, cx))) {
+    if let Ok((handle, _)) = gpui_kit::open_window(options, cx, |window, cx| cx.new(|cx| Onboarding::new(step, window, cx))) {
         cx.set_global(Open(Some(handle)));
     }
     cx.activate(true);
@@ -91,6 +100,7 @@ fn painting(step: usize) -> Arc<Image> {
                 include_bytes!("../assets/onboarding/meadow.jpg"),
                 include_bytes!("../assets/onboarding/lake.jpg"),
                 include_bytes!("../assets/onboarding/dusk.jpg"),
+                include_bytes!("../assets/onboarding/night.jpg"),
                 include_bytes!("../assets/onboarding/golden.jpg"),
             ];
             jpegs.into_iter().map(|jpeg| Arc::new(Image::from_bytes(ImageFormat::Jpeg, jpeg.to_vec()))).collect()
@@ -105,11 +115,16 @@ struct Onboarding {
     /// Whether the Do Not Disturb shortcut's been added (None: not known
     /// yet; Shortcuts is asked while its step is up).
     dnd: Option<bool>,
+    /// Whether a screen has a notch (else F2 hangs one from the menu bar).
+    notched: bool,
+    /// Asked for, of those macOS applies only once F2 reopens (so: Reopen
+    /// F2, once it's turned on).
+    asked: Vec<Permission>,
     _poll: Task<()>,
 }
 
 impl Onboarding {
-    fn new(window: &mut Window, cx: &mut Context<Self>) -> Self {
+    fn new(step: usize, window: &mut Window, cx: &mut Context<Self>) -> Self {
         // Permissions change in System Settings: looked at again each second
         // (and Shortcuts asked about Do Not Disturb's, on its step).
         let poll = cx.spawn(async move |this, cx| {
@@ -135,12 +150,15 @@ impl Onboarding {
                 }
             }
         });
-        // (Closed early: a window to start with all the same.)
+        // (Closed early: a window to start with all the same, and not
+        // back the next time.)
         window.on_window_should_close(cx, |_, cx| {
+            Settings::update(cx, |s| s.welcome_step = None);
             cx.defer(first_window);
             true
         });
-        Onboarding { step: 0, before: 0, dnd: None, _poll: poll }
+        let notched = cx.displays().iter().any(|d| macos::notch_band(u64::from(d.id()) as u32).0 > 0.);
+        Onboarding { step, before: step, dnd: None, notched, asked: Vec::new(), _poll: poll }
     }
 
     fn go(&mut self, step: usize, cx: &mut Context<Self>) {
@@ -148,11 +166,13 @@ impl Onboarding {
         if step != self.step {
             self.before = self.step;
             self.step = step;
+            Settings::update(cx, |s| s.welcome_step = Some(step));
             cx.notify();
         }
     }
 
     fn finish(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        Settings::update(cx, |s| s.welcome_step = None);
         window.remove_window();
         cx.defer(first_window);
     }
@@ -231,6 +251,27 @@ impl Onboarding {
             .into_any_element()
     }
 
+    /// A quieter one, beside it.
+    fn quiet_button(&self, id: impl Into<ElementId>, label: impl Into<SharedString>, on_click: impl Fn(&ClickEvent, &mut Window, &mut App) + 'static) -> AnyElement {
+        div()
+            .id(id)
+            .h(px(30.))
+            .px(px(12.))
+            .rounded_full()
+            .border_1()
+            .border_color(rgb(LINE))
+            .bg(white())
+            .hover(|s| s.bg(tint(SKY, 0.06)))
+            .text_color(rgb(INK))
+            .text_size(px(13.))
+            .font_weight(FontWeight::MEDIUM)
+            .flex()
+            .items_center()
+            .child(label.into())
+            .on_click(on_click)
+            .into_any_element()
+    }
+
     /// A green tick, and what's so.
     fn done_mark(&self, label: &'static str, window: &Window) -> AnyElement {
         let green: Hsla = rgb(GREEN).into();
@@ -244,6 +285,20 @@ impl Onboarding {
             .child(symbol("checkmark.circle.fill", 15., SEMIBOLD, green, window))
             .child(label)
             .into_any_element()
+    }
+
+    /// A switch, on or off.
+    fn switch(&self, on: bool) -> Div {
+        div()
+            .w(px(34.))
+            .h(px(20.))
+            .flex_shrink_0()
+            .rounded_full()
+            .bg(if on { rgb(SKY) } else { rgb(0xd9d4c7) })
+            .p(px(2.))
+            .flex()
+            .when(on, |d| d.justify_end())
+            .child(div().size(px(16.)).rounded_full().bg(white()).shadow(vec![BoxShadow { color: black().opacity(0.2), offset: point(px(0.), px(1.)), blur_radius: px(2.), spread_radius: px(0.), inset: false }]))
     }
 
     /// Words as typed into Quick Open.
@@ -363,33 +418,65 @@ impl Onboarding {
     }
 
     /// A permission's line: Allow…, or Allowed (and what to do in System
-    /// Settings, under what it's for).
-    fn permission(&self, i: usize, p: Permission, examples: Option<AnyElement>, window: &Window) -> Div {
+    /// Settings, under what it's for). One macOS applies only once F2
+    /// reopens, once asked for: Reopen F2 (and System Settings again).
+    fn permission(&self, i: usize, p: Permission, examples: Option<AnyElement>, window: &Window, cx: &mut Context<Self>) -> Div {
         let (name, about, sym, color) = p.about();
         let allowed = p.allowed();
-        let hint = (!allowed).then(|| p.hint()).flatten().map(|hint| div().text_size(px(11.5)).text_color(rgb(INK3)).child(hint));
+        let waiting = !allowed && p.reopens() && self.asked.contains(&p);
+        let hint = if waiting {
+            Some(div().text_size(px(11.5)).text_color(rgb(INK2)).child("Turned F2 on? Reopen F2 to start using it, and you'll be back here."))
+        } else {
+            (!allowed).then(|| p.hint()).flatten().map(|hint| div().text_size(px(11.5)).text_color(rgb(INK3)).child(hint))
+        };
         let under = div().flex().flex_col().gap(px(2.)).children(hint).children(examples).into_any_element();
-        let action = if allowed { self.done_mark("Allowed", window) } else { self.button(("allow", i), p.button(), move |_, _, cx| p.ask(cx)) };
+        let action = if allowed {
+            self.done_mark("Allowed", window)
+        } else if waiting {
+            div()
+                .flex()
+                .items_center()
+                .gap(px(8.))
+                .child(self.quiet_button(("settings", i), "Settings…", move |_, _, cx| p.ask(cx)))
+                .child(self.button(("reopen", i), format!("Reopen {}", crate::APP_NAME), |_, _, cx| crate::permissions::reopen(cx)))
+                .into_any_element()
+        } else {
+            self.button(
+                ("allow", i),
+                p.button(),
+                cx.listener(move |this, _, _, cx| {
+                    if p.reopens() && !this.asked.contains(&p) {
+                        this.asked.push(p);
+                    }
+                    p.ask(cx);
+                    cx.notify();
+                }),
+            )
+        };
         self.row(i == 0, sym, color, name, about, Some(under), action, window)
     }
 
-    fn permissions(&self, window: &Window) -> Div {
+    fn permissions(&self, window: &Window, cx: &mut Context<Self>) -> Div {
         let allowed = Permission::CORE.iter().filter(|p| p.allowed()).count();
         let all = Permission::CORE.len();
+        let rows: Vec<Div> = Permission::CORE.into_iter().enumerate().map(|(i, p)| self.permission(i, p, None, window, cx)).collect();
         div()
             .flex()
             .flex_col()
             .items_center()
-            .child(self.headline("A few permissions.", "Allow what you'll use. Settings › Permissions has them any time."))
-            .child(self.card().mt(px(30.)).w(px(680.)).children(Permission::CORE.into_iter().enumerate().map(|(i, p)| self.permission(i, p, None, window))))
+            .child(self.headline(
+                "A few permissions.",
+                "macOS keeps apps out of your folders, your screen and other apps until you let them in. Allow what you'll use: each button opens the right place in System Settings.",
+            ))
+            .child(self.card().mt(px(30.)).w(px(680.)).children(rows))
             .child(div().mt(px(16.)).child(self.note(if allowed == all {
                 "All set: every part of F2 can work.".to_string()
             } else {
-                format!("{allowed} of {all} allowed. This updates as you allow them.")
+                format!("{allowed} of {all} allowed. Full Disk Access and Screen Recording work once F2 reopens: the welcome comes back to this step.")
             })))
     }
 
-    fn your_day(&self, window: &Window) -> Div {
+    fn your_day(&self, window: &Window, cx: &mut Context<Self>) -> Div {
         let examples = |words: &[&'static str]| div().mt(px(6.)).flex().flex_wrap().gap(px(6.)).children(words.iter().map(|w| self.typed(w))).into_any_element();
         let dnd = match self.dnd {
             Some(true) => self.done_mark("Added", window),
@@ -414,8 +501,8 @@ impl Onboarding {
                 self.card()
                     .mt(px(30.))
                     .w(px(680.))
-                    .child(self.permission(0, Permission::Calendar, Some(examples(&["lunch with Sara friday at 1", "next meeting"])), window))
-                    .child(self.permission(1, Permission::Reminders, Some(examples(&["remind me to call mom at 5pm", "remind me in 20 min"])), window))
+                    .child(self.permission(0, Permission::Calendar, Some(examples(&["lunch with Sara friday at 1", "next meeting"])), window, cx))
+                    .child(self.permission(1, Permission::Reminders, Some(examples(&["remind me to call mom at 5pm", "remind me in 20 min"])), window, cx))
                     .child(self.row(
                         false,
                         "moon.fill",
@@ -536,6 +623,64 @@ impl Onboarding {
             )
     }
 
+    fn notch(&self, window: &Window, cx: &mut Context<Self>) -> Div {
+        let on = Settings::get(cx).notch.on;
+        let (headline, about, where_) = if self.notched {
+            ("Your notch, put to work.", "What's going on shows beside it: a timer, a recording, what's playing. Notes come down from it, and pointing at it shows everything.", "beside the notch")
+        } else {
+            ("A notch of your own.", "What's going on shows at the top of the screen, from a notch that's there only while it's needed. Notes come down from it, and pointing at it shows everything.", "at the top of the screen")
+        };
+        let switch = div()
+            .id("notch-on")
+            .child(self.switch(on))
+            .on_click(cx.listener(|_, _, _, cx| {
+                Settings::update(cx, |s| s.notch.on = !s.notch.on);
+                cx.notify();
+            }))
+            .into_any_element();
+        let try_it = if on {
+            self.button("notch-note", "Show a Note", |_, _, cx| {
+                crate::shots::note("A Note".into(), "Notes come down from here. Point at the notch to see the last few again.".into(), None, cx)
+            })
+        } else {
+            div().into_any_element()
+        };
+        div()
+            .flex()
+            .flex_col()
+            .items_center()
+            .child(self.headline(headline, about))
+            .child(
+                self.card()
+                    .mt(px(30.))
+                    .w(px(680.))
+                    .child(self.row(
+                        true,
+                        "macbook",
+                        0x1d1d1f,
+                        "What's going on, in the notch",
+                        format!("A timer counting down, the stopwatch, a screen recording, dictation listening, or what Music or Spotify is playing, {where_}."),
+                        None,
+                        switch,
+                        window,
+                    ))
+                    .child(
+                        self.row(
+                            false,
+                            "bell.fill",
+                            0xff9f0a,
+                            "Notes from the notch",
+                            "A timer done, text copied, a permission missing: they come down from the notch, not into the corner.",
+                            None,
+                            try_it,
+                            window,
+                        )
+                        .when(!on, |d| d.opacity(0.45)),
+                    ),
+            )
+            .child(div().mt(px(16.)).child(self.note(if on { "On. Settings › Notch has the rest." } else { "Only if you'd like: Settings › Notch has it any time." })))
+    }
+
     fn done(&self, cx: &mut Context<Self>) -> Div {
         // Keys (keycaps), or what's typed (in Quick Open, or anywhere).
         let tips: [(&str, bool, &str); 6] = [
@@ -570,17 +715,7 @@ impl Onboarding {
                             .flex()
                             .items_center()
                             .gap(px(10.))
-                            .child(
-                                div()
-                                    .w(px(34.))
-                                    .h(px(20.))
-                                    .rounded_full()
-                                    .bg(if login { rgb(SKY) } else { rgb(0xd9d4c7) })
-                                    .p(px(2.))
-                                    .flex()
-                                    .when(login, |d| d.justify_end())
-                                    .child(div().size(px(16.)).rounded_full().bg(white()).shadow(vec![BoxShadow { color: black().opacity(0.2), offset: point(px(0.), px(1.)), blur_radius: px(2.), spread_radius: px(0.), inset: false }])),
-                            )
+                            .child(self.switch(login))
                             .child(div().text_size(px(13.5)).font_weight(FontWeight::MEDIUM).child(format!("Open {} at login", crate::APP_NAME)))
                             .child(div().text_size(px(12.5)).text_color(rgb(INK3)).child("so Quick Open and the shortcuts are always there"))
                             .on_click(cx.listener(move |_, _, _, cx| {
@@ -596,9 +731,10 @@ impl Render for Onboarding {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let body = match self.step {
             0 => self.welcome(window),
-            1 => self.permissions(window),
-            YOUR_DAY => self.your_day(window),
+            1 => self.permissions(window, cx),
+            YOUR_DAY => self.your_day(window, cx),
             3 => self.shortcuts(window, cx),
+            NOTCH => self.notch(window, cx),
             _ => self.done(cx),
         };
         let last = self.step == STEPS - 1;

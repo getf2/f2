@@ -21,6 +21,13 @@ serde = { version = "1", features = ["derive", "rc"] }
 serde_json = "1"
 # (Ed25519 and SHA-256: the extension store's signed list, and its files.)
 ring = "0.17"
+# (Typing's word lists, looked up where they're built in.)
+fst = "0.4"
+# (The notch's terminal: what a terminal is, and the shell under it; GPUI
+# draws it.)
+alacritty_terminal = "0.26"
+# (Alacritty's config, its look imported into the notch's terminal.)
+toml = "0.8"
 
 [build-dependencies]
 cc = "1"
@@ -32,6 +39,9 @@ codegen-units = 1
 
 [profile.dev.package."*"]
 opt-level = 2
+# (No debug info for dependencies: most of target/debug's size. To debug
+# one, give it its own `[profile.dev.package.<name>] debug = true`.)
+debug = false
 
 # fsearch as of that rev, plus `Engine::with_live` (folder sizes from its
 # index): see vendor/README.md.

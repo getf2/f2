@@ -1322,3 +1322,44 @@ void nf_notch_music(void (*heard)(const char *json)) {
         [center addObserver:notchMusic selector:@selector(changed:) name:name object:nil suspensionBehavior:NSNotificationSuspensionBehaviorDeliverImmediately];
     }
 }
+
+// ---- The terminal that comes down from it (src/terminal/panel.rs).
+
+// The notch on the screen `display`, its width (0 if it has none), and how
+// tall the band at the screen's top is there: the notch, else the menu
+// bar.
+void nf_notch_band(uint32_t display, double *width, double *height) {
+    @autoreleasepool {
+        *width = 0;
+        *height = 24;
+        for (NSScreen *screen in NSScreen.screens) {
+            if (nf_island_screen_id(screen) != display) continue;
+            NSRect notch;
+            if (nf_island_notch(screen, &notch)) {
+                *width = NSWidth(notch);
+                *height = NSHeight(notch);
+            } else {
+                *height = MAX(NSMaxY(screen.frame) - NSMaxY(screen.visibleFrame), 24);
+            }
+        }
+    }
+}
+
+// The terminal's window: over the menu bar (above it, under the island),
+// its top at the top of `display`, in its middle, `width` by `height`; on
+// every space, over full-screen apps too.
+void nf_terminal_window(void *view, uint32_t display, double width, double height) {
+    @autoreleasepool {
+        NSWindow *window = [(__bridge NSView *)view window];
+        // (Its style mask made bare handed the keyboard to the window
+        // itself: GPUI's view again, or no text comes, only keys.)
+        [window makeFirstResponder:(__bridge NSView *)view];
+        window.level = NSMainMenuWindowLevel + 2;
+        window.collectionBehavior = NSWindowCollectionBehaviorCanJoinAllSpaces | NSWindowCollectionBehaviorFullScreenAuxiliary | NSWindowCollectionBehaviorIgnoresCycle;
+        for (NSScreen *screen in NSScreen.screens) {
+            if (nf_island_screen_id(screen) != display) continue;
+            NSRect frame = NSMakeRect(NSMidX(screen.frame) - width / 2, NSMaxY(screen.frame) - height, width, height);
+            [window setFrame:frame display:NO];
+        }
+    }
+}

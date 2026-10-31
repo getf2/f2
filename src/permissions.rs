@@ -41,10 +41,10 @@ impl Permission {
     /// Its name, what it's for, its symbol and tile's color.
     pub fn about(self) -> (&'static str, &'static str, &'static str, u32) {
         match self {
-            Permission::FullDisk => ("Full Disk Access", "See and search every folder, Mail's and Safari's too.", "externaldrive.fill", 0x8e8e93),
-            Permission::Accessibility => ("Accessibility", "Move windows, paste from Quick Open, expand snippets as they're typed.", "accessibility", 0x0a84ff),
-            Permission::ScreenRecording => ("Screen Recording", "Take screenshots of areas, windows and screens.", "record.circle", crate::commands::SCREENSHOTS),
-            Permission::Clipboard => ("Clipboard", "Keep a history of what's copied.", "doc.on.clipboard.fill", crate::commands::CLIPBOARD),
+            Permission::FullDisk => ("Full Disk Access", "So F2 can see and search every folder, as Finder does.", "externaldrive.fill", 0x8e8e93),
+            Permission::Accessibility => ("Accessibility", "So F2 can move windows, paste from Quick Open and expand snippets.", "accessibility", 0x0a84ff),
+            Permission::ScreenRecording => ("Screen Recording", "So F2 can take screenshots and recordings. They stay on your Mac.", "record.circle", crate::commands::SCREENSHOTS),
+            Permission::Clipboard => ("Clipboard", "So F2 can keep what you copy. Password managers' secrets are left out.", "doc.on.clipboard.fill", crate::commands::CLIPBOARD),
             Permission::Calendar => ("Calendar", "Add events as you say them in Quick Open, and see what's next.", "calendar", 0xff3b30),
             Permission::Reminders => ("Reminders", "Add reminders from Quick Open, with an alert at the time.", "checklist", 0xff9500),
             Permission::Contacts => ("Contacts", "Call, message and email people from Quick Open: “call mom”.", "person.crop.circle.fill", 0x8e8e93),
@@ -110,9 +110,9 @@ impl Permission {
     /// asks about itself, until it's been said no to.)
     pub fn hint(self) -> Option<&'static str> {
         Some(match self {
-            Permission::FullDisk => "In the list, turn F2 on (or add it with +). It takes effect when F2 next opens.",
+            Permission::FullDisk => "In the list, turn F2 on (or add it with +). It works once F2 reopens.",
             Permission::Accessibility => "Turn F2 on in the list.",
-            Permission::ScreenRecording => "Turn F2 on in the list, then reopen F2.",
+            Permission::ScreenRecording => "Turn F2 on in the list. It works once F2 reopens.",
             Permission::Clipboard => "Under Paste from Other Apps, set F2 to Allow.",
             Permission::Calendar if macos::calendar_access().is_none() => return None,
             Permission::Reminders if macos::reminders_access().is_none() => return None,
@@ -123,12 +123,39 @@ impl Permission {
         })
     }
 
+    /// Whether macOS applies it only as F2 starts: allowed, F2 has to
+    /// reopen.
+    pub fn reopens(self) -> bool {
+        matches!(self, Permission::FullDisk | Permission::ScreenRecording)
+    }
+
     /// Its button: "Allow…", or where macOS won't ask again, "Open Settings…".
     pub fn button(self) -> &'static str {
         match self {
             Permission::Calendar | Permission::Reminders | Permission::Contacts | Permission::Microphone if self.hint().is_some() => "Open Settings…",
             _ => "Allow…",
         }
+    }
+}
+
+/// F2 quit and opened again, for what macOS applies only as it starts:
+/// once this one's gone, the app opens again (or, run as a program, the
+/// program, as it was run). The welcome, if it was open, comes back at its
+/// step.
+pub fn reopen(cx: &mut App) {
+    let Ok(exe) = std::env::current_exe() else { return };
+    let app = exe.ancestors().find(|p| p.extension().is_some_and(|e| e == "app")).map(std::path::Path::to_path_buf);
+    let then = if app.is_some() { "open \"$0\"" } else { "exec \"$0\"" };
+    let waiting = std::process::Command::new("/bin/sh")
+        .arg("-c")
+        .arg(format!("while kill -0 {} 2>/dev/null; do sleep 0.1; done; {then}", std::process::id()))
+        .arg(app.as_deref().unwrap_or(&exe))
+        .stdin(std::process::Stdio::null())
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .spawn();
+    if waiting.is_ok() {
+        cx.quit();
     }
 }
 

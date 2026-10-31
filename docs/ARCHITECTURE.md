@@ -110,6 +110,28 @@ Search is [fsearch](https://github.com/noahdunnagan/fsearch), linked in
   shape drawn and moved by Core Animation, notes, and what Music and
   Spotify announce.
 
+## In beta
+
+Behind Settings › Advanced › "Turn on beta features" till they're done.
+
+- `src/typing.rs` typing Icelandic and Korean on ABC (after Vikey's
+  Vietnamese): which app's in front, the switch by hand, Delete to take a
+  word back; `src/typing/engine.rs` what a word becomes as it ends,
+  `src/typing/hangul.rs` 2-Set's keys into Hangul, `src/typing/words.rs`
+  the word lists (`assets/typing/`, made by `scripts/typing-words.sh`);
+  `src/settings_window/typing.rs` its settings; `src/macos/typing.m` the
+  keys (an event tap) and the text put back.
+- `src/terminal.rs` the notch's terminal: a shell (alacritty_terminal's
+  grid and pty) drawn by GPUI; in `src/terminal/`, `panel.rs` the window
+  that comes down from the notch, and its tabs; `keys.rs` keys as a
+  terminal sends them, `mouse.rs` the mouse for programs that ask for it,
+  `pointer.rs` clicks, selection, ⌘-click and the menu, `links.rs` links
+  and paths in what's printed, `find.rs` ⌘F, `shell.rs` what the shell's
+  running and where, `boxes.rs` box drawing, `theme.rs` themes
+  (`assets/terminal/`, made by `scripts/terminal-themes.sh`), `import.rs`
+  other terminals' looks; `src/settings_window/terminal.rs` its settings;
+  `src/macos/terminal.m` other terminals' settings and the Mac's fonts.
+
 ## The app
 
 - `src/settings.rs` settings, `src/settings_window.rs` (and
@@ -126,7 +148,8 @@ Search is [fsearch](https://github.com/noahdunnagan/fsearch), linked in
   notarized DMG and Sparkle's appcast (`scripts/dmg-settings.py`,
   `scripts/render-dmg-background.swift`); `scripts/licenses.py` the
   acknowledgements; `scripts/render-icon.swift` the icon.
-- `assets/`: the icon, fonts, the welcome's pictures, cities and emoji.
+- `assets/`: the icon, fonts, the welcome's pictures, cities and emoji,
+  typing's word lists and the terminal's themes.
 - `site/`: [getf2.com](https://getf2.com) (its own README).
 - `video/`: the feature video (Remotion).
 

@@ -115,8 +115,8 @@ Search is [fsearch](https://github.com/noahdunnagan/fsearch), linked in
 Behind Settings › Advanced › "Turn on beta features" till they're done.
 
 - `src/typing.rs` typing Icelandic and Korean on ABC (after Vikey's
-  Vietnamese): which app's in front, the switch by hand, Delete to take a
-  word back; `src/typing/engine.rs` what a word becomes as it ends,
+  Vietnamese): which app's in front, the switch by hand;
+  `src/typing/engine.rs` what a word becomes as it ends,
   `src/typing/hangul.rs` 2-Set's keys into Hangul, `src/typing/words.rs`
   the word lists (`assets/typing/`, made by `scripts/typing-words.sh`);
   `src/settings_window/typing.rs` its settings; `src/macos/typing.m` the

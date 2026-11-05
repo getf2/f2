@@ -2,12 +2,15 @@
 //! but those Icelandic has letters on: [ (ð), ; (æ), / (þ), - (ö), and '
 //! then a vowel (á é í ó ú ý). As a word ends (Space, Return, Tab, ⌘↩),
 //! it's read every way those can go, and typed the way that's a word:
-//! "/a[" is "það", "and/or" and "src/main.rs" stay. The language of the
-//! last word that said is the one words lean to: in Icelandic, those keys
+//! "/a[" is "það", "and/or" and "src/main.rs" stay. A key that closes a word
+//! (`CLOSES`) reads it the same way at once, if it's sure of a word: "Ver[mat"
+//! in quotes is "Verðmat" as they close. The language of the last word that
+//! said is the one words lean to: in Icelandic, those keys
 //! show their letters as they're typed, where that begins an Icelandic
-//! word ("þe", not "srcþ"); everything else is always ABC's. Delete just
-//! after takes a change back; the shortcut switches by hand. Nothing here
-//! touches macOS: src/typing.rs and src/macos/typing.m do.
+//! word ("þe", not "srcþ"); everything else is always ABC's. Delete goes
+//! back into a word just ended, as it is; the shortcut switches by hand, and
+//! puts back a word that switched by itself. Nothing here touches macOS:
+//! src/typing.rs and src/macos/typing.m do.
 //!
 //! Korean, as 2-Set types it (`hangul`), is a third way to read every word:
 //! "dkssud" is "안녕". In Korean, syllables are made as they're typed, and
@@ -37,6 +40,10 @@ const PAUSE: Duration = Duration::from_secs(5);
 /// How often a Korean word must be said to be one against an English or
 /// Icelandic word ("so" is 내, said 33,774 times; "for" isn't 랙, said 6).
 pub const SAID_OFTEN: u64 = 100;
+
+/// Keys that close a word, as ABC types them. (Not "." or ":": words go on
+/// after those, in addresses, file names and times.)
+const CLOSES: [&str; 5] = ["\"", ")", ",", "!", "?"];
 
 /// Faces, typed as on ABC whatever language it is (";)" isn't "æ)").
 const FACES: [&str; 24] = [
@@ -135,6 +142,15 @@ fn every(n: usize) -> Vec<Vec<bool>> {
     (0..1u32 << n).map(|mask| (0..n).map(|i| mask & (1 << i) != 0).collect()).collect()
 }
 
+/// Whether the last of a word's keys closes it: one of `CLOSES`, after a
+/// letter. A " straight after a key Icelandic has a letter on doesn't, unless
+/// a " opened the word: in a["b"] it opens a string.
+fn closes(units: &[Unit]) -> bool {
+    let Some((last, before)) = units.split_last() else { return false };
+    let string = last.abc == "\"" && before.last().is_some_and(|u| u.icelandic.is_some()) && !before.iter().any(|u| u.abc == "\"");
+    CLOSES.contains(&last.abc.as_str()) && !string && before.iter().any(|u| u.abc.chars().any(char::is_alphabetic))
+}
+
 /// What to do with a key.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum Out {
@@ -157,14 +173,6 @@ struct Word {
     keys: Vec<Key>,
     letters: Vec<bool>,
     shown: String,
-}
-
-/// A word changed as it ended, while Delete can still take that back: as
-/// it showed, and the language it was.
-struct Undo {
-    was: Word,
-    lang: Lang,
-    typed: String,
 }
 
 pub struct Engine {
@@ -194,9 +202,6 @@ pub struct Engine {
     /// Keys of it F2 can't follow were typed (⌥'s, a layout's dead keys:
     /// the app's own): it's left be.
     lost: bool,
-    /// Kept as it shows when it ends (Delete took a change back).
-    held: bool,
-    undo: Option<Undo>,
     /// The word just ended with a space (nothing since): the shortcut
     /// switches it, Delete goes back into it.
     last: Option<Word>,
@@ -218,8 +223,6 @@ impl Engine {
             word: Word::default(),
             fresh: true,
             lost: false,
-            held: false,
-            undo: None,
             last: None,
             paused_until: None,
         }
@@ -276,8 +279,6 @@ impl Engine {
         self.word = Word::default();
         self.fresh = true;
         self.lost = false;
-        self.held = false;
-        self.undo = None;
         self.last = None;
     }
 
@@ -406,7 +407,7 @@ impl Engine {
             DELETE => self.delete(mods),
             // (⌥Space is a shortcut more often than a space: Dictation's.)
             SPACE | RETURN | TAB | ENTER if mods & OPTION == 0 => self.end(code == SPACE, now),
-            _ if english.alone(key).is_some() && self.icelandic.alone(key).is_some() => self.typed(key),
+            _ if english.alone(key).is_some() && self.icelandic.alone(key).is_some() => self.typed(key, now),
             _ => {
                 self.forget();
                 Out::Pass
@@ -451,8 +452,7 @@ impl Engine {
     }
 
     /// A key that types.
-    fn typed(&mut self, key: Key) -> Out {
-        self.undo = None;
+    fn typed(&mut self, key: Key, now: Instant) -> Out {
         self.last = None;
         if self.lost {
             return Out::Pass;
@@ -466,7 +466,17 @@ impl Engine {
             return Out::Pass;
         }
         self.word.keys.push(key);
-        let shown = self.show();
+        let mut shown = self.show();
+        let units = self.units(&self.word.keys);
+        if closes(&units) && !self.paused(now) {
+            let (typed, letters, lang) = self.choose(&self.word.keys, &units, &self.word.letters);
+            // (Only a word it's sure of changes what shows.)
+            if let Some(lang) = lang.filter(|_| typed != shown) {
+                self.lang = lang;
+                self.word.letters = letters;
+                shown = typed;
+            }
+        }
         let (back, text) = edit(&self.word.shown, &shown);
         self.word.shown = shown;
         // (What ABC types anyway goes through as it is.)
@@ -476,11 +486,9 @@ impl Engine {
         Out::Type { back, text, key: false }
     }
 
-    /// Delete: a change taken back, or the word one shorter.
+    /// Delete: back in the word just ended (only its space goes), or the
+    /// word one shorter.
     fn delete(&mut self, mods: u8) -> Out {
-        if let Some(undo) = self.undo.take() {
-            return self.take_back(undo);
-        }
         let last = self.last.take();
         if mods & OPTION != 0 || self.lost {
             self.forget();
@@ -517,7 +525,6 @@ impl Engine {
 
     /// The word ends: typed the way it's a word.
     fn end(&mut self, space: bool, now: Instant) -> Out {
-        self.undo = None;
         self.last = None;
         if self.word.keys.is_empty() || self.lost {
             self.forget();
@@ -525,11 +532,8 @@ impl Engine {
             return Out::Pass;
         }
         let word = std::mem::take(&mut self.word);
-        let held = std::mem::replace(&mut self.held, false);
         let units = self.units(&word.keys);
-        let before = self.lang;
-        let finished = self.reading(before, &word.keys, &units, &word.letters);
-        let (typed, letters, lang) = if held || self.paused(now) { (finished.clone(), word.letters.clone(), None) } else { self.choose(&word.keys, &units, &word.letters) };
+        let (typed, letters, lang) = if self.paused(now) { (self.reading(self.lang, &word.keys, &units, &word.letters), word.letters.clone(), None) } else { self.choose(&word.keys, &units, &word.letters) };
         self.fresh = !space;
         if let Some(lang) = lang {
             self.lang = lang;
@@ -541,10 +545,6 @@ impl Engine {
             return Out::Pass;
         }
         let (back, text) = edit(&word.shown, &typed);
-        // (Changed, not just finished: ' left waiting typed.)
-        if space && typed != finished {
-            self.undo = Some(Undo { was: word, lang: before, typed });
-        }
         Out::Type { back, text, key: true }
     }
 
@@ -630,7 +630,6 @@ impl Engine {
     /// on), for the word being typed or the one just ended (with its
     /// space). Words don't switch it back for a while.
     pub fn switch(&mut self, now: Instant) -> Out {
-        self.undo = None;
         let on: Vec<Lang> = Lang::ALL.into_iter().filter(|lang| self.on(*lang)).collect();
         let at = on.iter().position(|lang| *lang == self.lang).unwrap_or(0);
         self.lang = on[(at + 1) % on.len()];
@@ -667,18 +666,6 @@ impl Engine {
             return Out::Type { back, text, key: false };
         }
         Out::keep()
-    }
-
-    /// Delete just after a word changed as it ended: as it showed, and the
-    /// language it was, back in the word (kept as it is when it ends).
-    fn take_back(&mut self, undo: Undo) -> Out {
-        self.last = None;
-        let (back, text) = edit(&format!("{} ", undo.typed), &undo.was.shown);
-        self.word = undo.was;
-        self.lang = undo.lang;
-        self.lost = false;
-        self.held = true;
-        Out::Type { back, text, key: false }
     }
 }
 
@@ -834,11 +821,6 @@ mod tests {
     #[test]
     fn delete() {
         let mut e = engine();
-        // (Delete just after: back as typed, and kept so.)
-        assert_eq!(type_in(&mut e, "a[ \u{8}"), "a[");
-        assert_eq!(e.lang, Lang::English);
-        assert_eq!(type_in(&mut e, " "), " ");
-        let mut e = engine();
         assert_eq!(type_in(&mut e, "/a[ /a\u{8}e"), "það þe");
         // (' waiting goes with nothing to take back; á goes whole.)
         assert_eq!(type_in(&mut e, "'\u{8}a"), "a");
@@ -846,7 +828,76 @@ mod tests {
     }
 
     #[test]
+    fn back_over_the_space() {
+        // (Only the space goes, a word that changed as it ended too: it's
+        // still that word, in its language, to write on.)
+        for (typed, word) in [
+            ("a[ \u{8}", "að"),
+            ("a[ \u{8} ", "að "),
+            ("a[ \u{8}\u{8}", "a"),
+            ("\"Ver[mat \u{8}", "\"Verðmat"),
+            ("\"Ver[mat \u{8}\"", "\"Verðmat\""),
+            ("\"Ver[mat \u{8}\" ", "\"Verðmat\" "),
+            ("Ver[mat \u{8}, ", "Verðmat, "),
+            ("Ver[mat \u{8}i ", "Verðmati "),
+            ("Ver[mati \u{8}\u{8} ", "Verðmat "),
+        ] {
+            let mut e = engine();
+            assert_eq!(type_in(&mut e, typed), word);
+            assert_eq!(e.lang, Lang::Icelandic, "{typed}");
+        }
+        // (A word in Korean: its space, then a jamo.)
+        let mut e = all_three();
+        assert_eq!(type_in(&mut e, "dkssud \u{8}"), "안녕");
+        assert_eq!(e.lang, Lang::Korean);
+        let mut e = all_three();
+        assert_eq!(type_in(&mut e, "dkssud \u{8}\u{8}"), "안녀");
+    }
+
+    #[test]
+    fn closing_marks() {
+        for (typed, word) in [
+            ("\"Ver[mat\"", "\"Verðmat\""),
+            ("(Ver[mat)", "(Verðmat)"),
+            ("Ver[mat,", "Verðmat,"),
+            ("Ver[mat!", "Verðmat!"),
+            ("Ver[mat?", "Verðmat?"),
+            ("\"a[\"", "\"að\""),
+            ("\"/a[\"", "\"það\""),
+            ("\"hello Ver[mat\" ", "\"hello Verðmat\" "),
+            // (At the space, and back over it, it's the word still.)
+            ("\"Ver[mat\" \u{8}", "\"Verðmat\""),
+            ("\"Ver[mat\" \u{8}\u{8}", "\"Verðmat"),
+            // (Not these: words go on after them.)
+            ("Ver[mat. ", "Verðmat. "),
+            ("Ver[mat: ", "Verðmat: "),
+        ] {
+            let mut e = engine();
+            assert_eq!(type_in(&mut e, typed), word);
+            assert_eq!(e.lang, Lang::Icelandic, "{typed}");
+        }
+        for typed in ["Ver[mat.", "Ver[mat:", "\u{1}\u{1}\"a[\" "] {
+            let mut e = engine();
+            let field = type_in(&mut e, typed);
+            assert_eq!(field, typed.replace('\u{1}', ""), "not yet, or switched by hand");
+            assert_eq!(e.lang, Lang::English, "{typed}");
+        }
+        // (Code, English and punctuation stay.)
+        let mut e = engine();
+        let typed = "a[\"b\"] ba[\"k\"] x[\"k\"] (a[i]) a[0], f(x), \"don't\" (and/or) \"hello\", f; a[, ";
+        assert_eq!(type_in(&mut e, typed), typed.replace("a[, ", "að, "));
+        let mut e = engine();
+        e.set_app("com.apple.Terminal", false);
+        assert_eq!(type_in(&mut e, "\"a[\" (a[) a[, "), "\"a[\" (a[) a[, ");
+    }
+
+    #[test]
     fn by_hand() {
+        // (A word that switched by itself, put back: and words leave it so.)
+        let mut e = engine();
+        assert_eq!(type_in(&mut e, "a[ \u{1}"), "a[ ");
+        assert_eq!(e.lang, Lang::English);
+        assert_eq!(type_in(&mut e, "a[ "), "a[ ");
         let mut e = engine();
         // ("'A" is English's too: the shortcut, just after.)
         assert_eq!(type_in(&mut e, "'A \u{1}morgun "), "Á morgun ");

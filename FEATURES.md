@@ -315,8 +315,9 @@ more detail.
 - **Icelandic**: the keys Icelandic has letters on type them when that makes a word ([ for ð, ; for æ, / for þ, - for ö, ' then a vowel for á é í ó ú ý): /a[ becomes það, f;ri færi, Nor[ur-Amer'ika Norður-Ameríka, while don't, and/or, e-mail and a[i] stay as typed. While you're writing Icelandic, the letters show as you type them, where they begin an Icelandic word: /e shows þe, but src/main.rs, km/h and ~/Downloads keep their slashes, and a / beginning a line stays one (for commands). With ⇧: a capital at a word's start, ABC's ? or : after letters.
 - **Korean**: keys as on Korean's 2-Set make Hangul: dkssud becomes 안녕, rkatkgkqslek 감사합니다, zz ㅋㅋ. While you're writing Korean, syllables build up as you type (and Delete takes back a jamo, as 2-Set does); an English word goes back as you finish it. A Korean word has to be said often to win over an English one: so becomes 내 when you're writing Korean, but for never becomes 랙.
 - Every other key types as on ABC, always: ?, @, (, ), 2-3, :). Words only one language has (og, takk, the, 안녕) say which language you're writing in.
-- **Switch by hand** with ⌥Z (or a shortcut you record): English, Icelandic, Korean and round again, for the word you're typing or the one you just typed; words don't switch it back for 5 seconds.
-- **Delete right after** a word switched by itself puts it back as you typed it.
+- **Switch by hand** with ⌥Z (or a shortcut you record): English, Icelandic, Korean and round again, for the word you're typing or the one you just typed; words don't switch it back for 5 seconds. It's also how to put back a word that switched by itself.
+- **A closing quote or bracket, a comma, ! or ?** read the word as a space does, so "Ver[mat" is "Verðmat" as the quotes close.
+- **Delete right after a word** takes only the space, and you're back in the word as it is, to add a quote, a comma or more letters.
 - Each app keeps its language. In Terminal and code editors it only switches by hand: a[ there is code more often than að. With the Icelandic layout itself (or Korean's input source) chosen in the menu bar, keys are left as they are.
 - It knows every word form in BÍN (3.7 million, from the Árni Magnússon Institute), 115,000 English words and the 200,000 Korean words said most, built in: nothing typed leaves the Mac.
 -->

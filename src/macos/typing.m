@@ -25,7 +25,7 @@ static CFMachPortRef typingTap;
 static CGEventSourceRef typingSource;
 static bool (*_Atomic typingHeard)(int32_t kind, uint16_t code, uint64_t flags, nf_typing_out *out);
 static void (*typingChanged)(int32_t kind, const char *text);
-static id typingSourceObserver, typingAppObserver;
+static id typingAppObserver;
 
 // ---- The keys.
 
@@ -101,6 +101,10 @@ static void nf_typing_front(NSRunningApplication *app) {
     if (typingChanged) typingChanged(1, (app.bundleIdentifier ?: app.localizedName ?: @"").UTF8String);
 }
 
+static void nf_typing_source(__unused CFNotificationCenterRef center, __unused void *observer, __unused CFNotificationName name, __unused const void *object, __unused CFDictionaryRef info) {
+    if (typingChanged) typingChanged(0, NULL);
+}
+
 // Hear keys down and clicks in any app (see typing_listen in macos.rs), and
 // the input source changing and apps coming to the front. NULL: stop.
 // False if it can't (no Accessibility). On the main thread.
@@ -109,19 +113,17 @@ bool nf_typing_listen(bool (*heard)(int32_t kind, uint16_t code, uint64_t flags,
     typingChanged = heard ? changed : NULL;
     if (!heard) {
         if (typingTap) CGEventTapEnable(typingTap, false);
-        if (typingSourceObserver) [NSDistributedNotificationCenter.defaultCenter removeObserver:typingSourceObserver];
+        CFNotificationCenterRemoveObserver(CFNotificationCenterGetDistributedCenter(), &typingChanged, kTISNotifySelectedKeyboardInputSourceChanged, NULL);
         if (typingAppObserver) [NSWorkspace.sharedWorkspace.notificationCenter removeObserver:typingAppObserver];
-        typingSourceObserver = typingAppObserver = nil;
+        typingAppObserver = nil;
         return true;
     }
     if (!typingTap && !AXIsProcessTrusted()) return false;
-    if (!typingSourceObserver) {
-        typingSourceObserver = [NSDistributedNotificationCenter.defaultCenter addObserverForName:(__bridge NSString *)kTISNotifySelectedKeyboardInputSourceChanged
-                                                                                         object:nil
-                                                                                          queue:NSOperationQueue.mainQueue
-                                                                                     usingBlock:^(__unused NSNotification *n) {
-                                                                                       if (typingChanged) typingChanged(0, NULL);
-                                                                                     }];
+    if (!typingAppObserver) {
+        // (At once: left to itself, this waits while F2 isn't the active app,
+        // which is when nearly everything's typed. Back on ABC from behind
+        // another app, Typing stayed off, as the last source F2 heard of.)
+        CFNotificationCenterAddObserver(CFNotificationCenterGetDistributedCenter(), &typingChanged, nf_typing_source, kTISNotifySelectedKeyboardInputSourceChanged, NULL, CFNotificationSuspensionBehaviorDeliverImmediately);
         typingAppObserver = [NSWorkspace.sharedWorkspace.notificationCenter addObserverForName:NSWorkspaceDidActivateApplicationNotification
                                                                                          object:nil
                                                                                           queue:NSOperationQueue.mainQueue

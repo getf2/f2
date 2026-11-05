@@ -100,7 +100,7 @@ impl SettingsWindow {
             )
             .child(heading("Good to know:"))
             .child(div().flex().flex_col().gap_1().children([
-                note("Delete right after a word switched by itself puts it back as you typed it."),
+                note("If a word switches by itself and you didn't want it to, press the shortcut right after it."),
                 note("Each app keeps its language. In Terminal and code editors it only switches by hand: a[ there is code more often than að."),
                 note("With the Icelandic layout itself (or Korean's input source) chosen in the menu bar, keys are left as they are."),
                 note(
